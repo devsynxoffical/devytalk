@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/ui/CountUp";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight, Check, X } from "lucide-react";
@@ -46,7 +47,7 @@ export default async function SolutionPage({ params }: Props) {
         <dl className="mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-4 text-left sm:grid-cols-3">
           {solution.kpis.map((k) => (
             <div key={k.label} className="shadow-card rounded-2xl border border-ink-100 bg-white p-5">
-              <dd className="text-3xl font-semibold tracking-tight text-ink-900">{k.value}</dd>
+              <dd className="text-3xl font-semibold tracking-tight text-ink-900"><CountUp value={k.value} /></dd>
               <dt className="mt-1 text-sm text-ink-500">{k.label}</dt>
             </div>
           ))}

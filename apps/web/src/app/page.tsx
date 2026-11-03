@@ -36,14 +36,9 @@ export default function HomePage() {
         <Reveal>
           <SectionHeading
             layout="split"
-            title={
-              <>
-                One phone system.
-                <br />
-                Two kinds of agent.
-              </>
-            }
-            description="Your team and your AI agents share the same numbers, queues and routing rules in 30+ languages. Pick a country and see how a call reaches the right agent, human or AI."
+            eyebrow="Humans + AI"
+            title="Your team and your AI agent, working the same line."
+            description="Give every market a local number. Calls reach your people first, and Devy steps in the moment nobody is free, in the caller's language. Pick a country to see it in action."
           />
         </Reveal>
         <Reveal className="mt-12">
@@ -54,8 +49,8 @@ export default function HomePage() {
       <section className="container-page py-16 sm:py-24">
         <Reveal>
           <SectionHeading
-            title="Cover the calls you can't staff"
-            description="After hours, overflow, first-touch leads, follow-ups. Tell DevyTalk which calls AI should take and it handles them, while your team takes the rest."
+            title="Let AI pick up the calls nobody has time for"
+            description="Late-night questions, Monday-morning spikes, the lead that came in at lunch. Choose what Devy handles and watch the work disappear from your team's plate."
           />
         </Reveal>
         <Reveal className="mx-auto mt-14 max-w-5xl">
@@ -75,8 +70,9 @@ export default function HomePage() {
         <Reveal>
           <SectionHeading
             layout="split"
-            title="Everything your reps need to run calls all day."
-            description="Smart routing, dialers, live coaching and wallboards in one workspace, with every call logged to your CRM automatically."
+            eyebrow="For reps & managers"
+            title="A calling workspace your reps will actually love."
+            description="Fewer clicks, more conversations. Routing, dialers and live coaching sit in one calm workspace, and every call writes itself into your CRM."
           />
         </Reveal>
         <Reveal className="mt-12">
@@ -118,8 +114,9 @@ export default function HomePage() {
         <Reveal>
           <SectionHeading
             layout="split"
-            title="AI agents that work the same queues as your team"
-            description="Build voice agents that answer after hours, qualify leads and follow up on every call, on the same numbers, queues and integrations your reps already use."
+            eyebrow="DevyTalk AI"
+            title="AI teammates, plugged straight into your queues."
+            description="Build a voice agent in minutes, train it on your help center and give it a job: reception, lead follow-up or quality review. No new numbers, no new tools."
           />
         </Reveal>
         <Reveal className="mt-12">

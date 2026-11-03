@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, Bot, Headphones, MapPin } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { CountUp } from "@/components/ui/CountUp";
 
 const COUNTRIES = [
   { flag: "🇺🇸", name: "United States", number: "+1 (415) 555 0134", city: "San Francisco", lang: "English", agent: "Olivia", team: "Sales US" },
@@ -16,10 +17,10 @@ const COUNTRIES = [
 ];
 
 const stats = [
-  { value: "140+", label: "Countries with local numbers" },
-  { value: "30+", label: "Languages your AI agent speaks" },
-  { value: "Port in", label: "Keep your numbers, free" },
-  { value: "99.99%", label: "Uptime, backed by SLA" },
+  { value: "140+", label: "countries with local numbers" },
+  { value: "30+", label: "languages Devy speaks" },
+  { value: "5 min", label: "from sign-up to first call" },
+  { value: "99.99%", label: "uptime, backed by our SLA" },
 ];
 
 export function AgentsPanel() {
@@ -129,7 +130,7 @@ export function AgentsPanel() {
       <dl className="mt-5 grid grid-cols-1 [&>*]:min-w-0 grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="shadow-card rounded-2xl border border-ink-100 bg-white p-5">
-            <dd className="text-3xl font-semibold tracking-tight text-ink-900">{s.value}</dd>
+            <dd className="text-3xl font-semibold tracking-tight text-ink-900"><CountUp value={s.value} /></dd>
             <dt className="mt-1 text-sm text-ink-500">{s.label}</dt>
           </div>
         ))}

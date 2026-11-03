@@ -14,7 +14,7 @@ export function Testimonials() {
 
   return (
     <section className="container-page py-16 sm:py-24">
-      <SectionHeading title="What real teams are saying." />
+      <SectionHeading eyebrow="Customers" title="Loved by teams who live on the phone" />
       <div role="tablist" aria-label="Customer stories" className="mt-12 grid grid-cols-2 border-b border-ink-100 sm:grid-cols-5">
         {testimonials.map((x, i) => (
           <button

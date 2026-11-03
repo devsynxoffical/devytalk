@@ -1,87 +1,73 @@
 import { ArrowRight, Star } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
-import { Eyebrow } from "@/components/ui/Eyebrow";
 import { LogoStrip } from "@/components/sections/LogoStrip";
-import { HeroCallForm } from "./HeroCallForm";
+import { WordRotator } from "./WordRotator";
+import { CallMeBar } from "./CallMeBar";
+import { HeroScene } from "./HeroScene";
 
-/** White "inverted corner" so the CTA tab looks cut out of the hero card. */
-function Corner({ className }: { className: string }) {
-  return (
-    <span
-      className={`absolute size-6 ${className}`}
-      style={{ background: "radial-gradient(circle at 0 0, transparent 1.5rem, #fff calc(1.5rem + 0.5px))" }}
-      aria-hidden="true"
-    />
-  );
-}
+const enter = (delay: number) => ({ animation: `menuItem .8s cubic-bezier(.2,.8,.2,1) ${delay}ms both` });
 
 export function Hero() {
   return (
-    <section className="pt-[7.5rem] sm:pt-32">
-      <div className="container-page">
-        <div className="relative">
-          <div className="bg-mesh-dark relative overflow-hidden rounded-[2rem] px-6 pb-10 pt-12 text-white sm:px-12 lg:min-h-[35rem] lg:pb-28 lg:pt-16">
-            <div className="bg-dots absolute inset-0 opacity-25 invert" aria-hidden="true" />
-            <svg className="absolute -right-24 -top-24 size-[30rem] text-white/10" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-              {[30, 50, 70, 90].map((r) => (
-                <circle key={r} cx="100" cy="100" r={r} stroke="currentColor" strokeWidth="0.6" />
-              ))}
-            </svg>
-            <div className="relative grid grid-cols-1 [&>*]:min-w-0 gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
-              <div className="max-w-xl">
-                <Eyebrow tone="dark">The AI phone system for sales & support</Eyebrow>
-                <h1 className="mt-6 text-[2.5rem] font-semibold leading-[1.04] tracking-tight text-balance sm:text-[3.4rem] lg:text-[3.7rem]">
-                  Every call answered, 24/7. <span className="text-lime-300">By your team, or by AI.</span>
-                </h1>
-                <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/75 text-pretty">
-                  Route, dial, record and analyse every conversation in one cloud phone system, with AI agents that pick up when your team can&apos;t.
-                </p>
-                <div className="mt-10 flex items-center gap-4 lg:mt-16">
-                  <div className="flex -space-x-2" aria-hidden="true">
-                    {["from-lime-300 to-brand-500", "from-sky-300 to-brand-600", "from-brand-200 to-sky-500", "from-lime-200 to-sky-400"].map((g, i) => (
-                      <span key={i} className={`size-9 rounded-full border-2 border-brand-900 bg-gradient-to-br ${g}`} />
-                    ))}
-                  </div>
-                  <div className="text-sm">
-                    <p className="flex items-center gap-1 font-semibold">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <Star key={i} className="size-3.5 fill-lime-300 text-lime-300" aria-hidden="true" />
-                      ))}
-                      <span className="ml-1">4.8/5</span>
-                    </p>
-                    <p className="text-white/65">from 2,300+ reviews by sales & support teams</p>
-                  </div>
-                </div>
-              </div>
-              <div className="lg:pt-2">
-                <HeroCallForm />
-              </div>
-            </div>
-          </div>
+    <section className="relative overflow-hidden pt-36 sm:pt-40">
+      {/* Animated aurora + dotted grid backdrop */}
+      <div className="pointer-events-none absolute inset-0 -z-0" aria-hidden="true">
+        <div className="absolute -left-[10%] -top-40 size-[42rem] animate-[aurora_18s_ease-in-out_infinite] rounded-full bg-brand-200/60 blur-[110px]" />
+        <div className="absolute -right-[8%] top-0 size-[36rem] animate-[aurora_22s_ease-in-out_infinite_reverse] rounded-full bg-sky-300/40 blur-[110px]" />
+        <div className="absolute left-1/3 top-[28rem] size-[30rem] animate-[aurora_26s_ease-in-out_infinite] rounded-full bg-lime-300/40 blur-[120px]" />
+        <div className="bg-dots absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]" />
+      </div>
 
-          {/* CTA tab "cut out" of the card's bottom-right corner (desktop) */}
-          <div className="absolute bottom-0 right-0 hidden rounded-tl-[1.75rem] bg-white pl-5 pt-5 lg:block">
-            <Corner className="-top-6 right-0" />
-            <Corner className="-left-6 bottom-0" />
-            <div className="flex gap-3">
-              <ButtonLink href="/demo" size="lg">
-                Book a demo
-              </ButtonLink>
-              <ButtonLink href="/signup" variant="outline" size="lg">
-                Start free trial <ArrowRight className="size-4" aria-hidden="true" />
-              </ButtonLink>
-            </div>
-          </div>
+      <div className="container-page relative text-center">
+        <div style={enter(0)} className="mx-auto inline-flex items-center gap-3 rounded-full border border-ink-100 bg-white/80 py-1.5 pl-1.5 pr-4 text-[13px] text-ink-600 shadow-sm backdrop-blur">
+          <span className="flex -space-x-1.5" aria-hidden="true">
+            {["from-lime-300 to-brand-500", "from-sky-300 to-brand-600", "from-brand-200 to-sky-500"].map((g) => (
+              <span key={g} className={`size-6 rounded-full border-2 border-white bg-gradient-to-br ${g}`} />
+            ))}
+          </span>
+          <span className="flex items-center gap-1 font-semibold text-ink-900">
+            <Star className="size-3.5 fill-lime-400 text-lime-500" aria-hidden="true" /> 4.8
+          </span>
+          <span className="hidden sm:inline">Loved by 4,000+ phone teams</span>
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row lg:hidden">
-          <ButtonLink href="/demo" size="lg">Book a demo</ButtonLink>
-          <ButtonLink href="/signup" variant="outline" size="lg">Start free trial</ButtonLink>
+        <h1 style={enter(120)} className="mx-auto mt-7 max-w-6xl text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.035em] text-ink-900 sm:text-[3.6rem] lg:text-[4.2rem]">
+          <span className="block">The phone system that</span>
+          <span className="block">helps your team</span>
+          <WordRotator
+            words={["sell more.", "support better.", "answer every call.", "work with AI."]}
+            className="block pb-2"
+            wordClassName="text-gradient"
+          />
+        </h1>
+
+        <p style={enter(240)} className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-ink-500 text-pretty sm:text-xl">
+          Calling, routing, analytics and AI voice agents in one beautifully simple workspace. Live in five minutes, no hardware needed.
+        </p>
+
+        <div style={enter(360)} className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <ButtonLink href="/signup" variant="dark" size="lg" className="group">
+            Start free for 14 days
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+          </ButtonLink>
+          <ButtonLink href="/demo" variant="outline" size="lg">
+            Book a demo
+          </ButtonLink>
         </div>
 
-        <div className="mt-14 sm:mt-16">
-          <LogoStrip />
+        <div style={enter(480)} className="mt-8">
+          <p className="mb-3 text-[13px] font-medium text-ink-500">Or hear our AI agent for yourself. Enter your number:</p>
+          <CallMeBar />
         </div>
+      </div>
+
+      <div style={enter(600)} className="container-page relative mt-16 pb-12 sm:mt-20">
+        <HeroScene />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-20 bg-gradient-to-t from-white to-transparent" aria-hidden="true" />
+      </div>
+
+      <div className="container-page relative pb-6 pt-4">
+        <LogoStrip />
       </div>
     </section>
   );

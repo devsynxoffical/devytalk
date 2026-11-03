@@ -10,15 +10,15 @@ import { cn } from "@/lib/cn";
 
 const TABS: { label: string; names: string[] }[] = [
   {
-    label: "CRM & e-commerce",
+    label: "Sales & commerce",
     names: ["Salesforce", "HubSpot", "Pipedrive", "Zoho CRM", "Microsoft Dynamics", "Odoo", "Airtable", "Shopify", "WooCommerce", "BigCommerce", "Stripe", "Gmail", "Google Calendar", "Slack", "Zapier", "Make"],
   },
   {
-    label: "Support & helpdesk",
+    label: "Customer support",
     names: ["Zendesk", "Freshdesk", "Intercom", "Help Scout", "Gorgias", "Jira Service", "Linear", "Shopify", "Slack", "Microsoft Teams", "WhatsApp", "Notion", "Asana", "Gmail", "HubSpot", "Salesforce"],
   },
   {
-    label: "Data, sync & automation",
+    label: "Automation & data",
     names: ["Zapier", "Make", "n8n", "Webhooks", "REST API", "Google Sheets", "Google Analytics", "Airtable", "Notion", "Mailchimp", "Stripe", "Slack", "Asana", "Linear", "Google Calendar", "HubSpot"],
   },
 ];
@@ -31,8 +31,8 @@ export function IntegrationsTabs() {
     <section className="container-page py-16 sm:py-24">
       <SectionHeading
         eyebrow="Integrations"
-        title="Plug into everything you use"
-        description="Every call, recording and summary lands in the tools your team already lives in. 100+ native integrations, plus Zapier, Make, webhooks and an open API."
+        title="Works with the stack you already have"
+        description="Connect your CRM in two clicks and never copy a phone number again. 100+ native integrations, plus Zapier, Make, webhooks and an open API."
       />
       <div role="tablist" aria-label="Integration categories" className="mx-auto mt-12 grid max-w-4xl grid-cols-3 border-b border-ink-100">
         {TABS.map((t, i) => (

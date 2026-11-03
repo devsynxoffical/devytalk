@@ -6,7 +6,7 @@ import { ButtonLink } from "@/components/ui/Button";
 export function TryIt() {
   return (
     <section className="container-page py-16 sm:py-24">
-      <SectionHeading title="See the whole platform yourself" description="Dial a number in the softphone below. It's the same calling experience your agents get in the browser, with live AI transcription." />
+      <SectionHeading eyebrow="Try it now" title="Make a test call, right here" description="This is the same softphone your agents get in the browser. Dial any number, press call and watch the AI transcribe in real time." />
       <div className="bg-mesh-light mt-14 grid grid-cols-1 [&>*]:min-w-0 items-center gap-10 overflow-hidden rounded-[1.75rem] border border-ink-100 p-6 sm:p-12 lg:grid-cols-2">
         <div className="order-2 lg:order-1">
           <ul className="space-y-4">

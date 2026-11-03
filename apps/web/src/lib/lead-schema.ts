@@ -14,7 +14,15 @@ const optionalText = (max: number) =>
 export const leadSchema = z
   .object({
     kind: z.enum(leadKinds),
-    email: z.string().trim().toLowerCase().email("Enter a valid work email").max(254),
+    /** Required for every kind except "callback", where the phone number is the contact. */
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .max(254)
+      .optional()
+      .transform((v) => (v ? v : undefined))
+      .pipe(z.string().email("Enter a valid work email").optional()),
     name: optionalText(120),
     company: optionalText(160),
     phone: z
@@ -30,6 +38,9 @@ export const leadSchema = z
     website: z.string().max(0, "Spam detected").optional(),
   })
   .superRefine((lead, ctx) => {
+    if (lead.kind !== "callback" && !lead.email) {
+      ctx.addIssue({ code: "custom", path: ["email"], message: "Enter a valid work email" });
+    }
     if (lead.kind === "callback" && (!lead.phone || lead.phone.replace(/\D/g, "").length < 6)) {
       ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter the number we should call" });
     }

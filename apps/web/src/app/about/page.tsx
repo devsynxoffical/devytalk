@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/ui/CountUp";
 import type { Metadata } from "next";
 import { Heart, Lightbulb, Scale, Zap } from "lucide-react";
 import { PageHero } from "@/components/ui/PageHero";
@@ -41,7 +42,7 @@ export default function AboutPage() {
         <dl className="grid grid-cols-1 [&>*]:min-w-0 grid-cols-2 gap-4 lg:grid-cols-4">
           {numbers.map((n) => (
             <div key={n.label} className="shadow-card rounded-2xl border border-ink-100 bg-white p-6">
-              <dd className="text-4xl font-semibold tracking-tight text-ink-900">{n.value}</dd>
+              <dd className="text-4xl font-semibold tracking-tight text-ink-900"><CountUp value={n.value} /></dd>
               <dt className="mt-1 text-sm text-ink-500">{n.label}</dt>
             </div>
           ))}

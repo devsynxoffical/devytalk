@@ -26,8 +26,9 @@ Light theme on pure white sections. Colour lives in cards, product frames and gr
 ink navy text (`ink-*`), emerald-teal primary (`brand-*`), lime highlights (`lime-*`) and a sky gradient partner,
 all defined as Tailwind tokens in `apps/web/src/app/globals.css`.
 
-The home page follows a proven SaaS telephony structure: gradient hero card with a working "AI agent calls you" form,
-logo marquee, an interactive country / human-vs-AI agent panel with stat cards, an AI use-case selector,
+The home page opens with a light, centered hero: a rotating headline, an inline "Call me" bar that requests a call
+from the AI agent, and an animated live-call scene with mouse parallax. It continues with a logo marquee,
+an interactive country / human-vs-AI agent panel with count-up stats, an AI use-case selector,
 two product showcases with auto-rotating tabs over HTML-built product UI, tabbed testimonials, a bento feature grid,
 a live softphone demo, tabbed integrations, a compliance banner, FAQ with a contact card and a big-wordmark footer.
 

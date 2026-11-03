@@ -15,8 +15,9 @@ export function SecuritySection() {
     <section className="container-page py-16 sm:py-24">
       <SectionHeading
         layout="split"
-        title="Security and compliance built into every call"
-        description="Your calls carry your customers' most sensitive moments. DevyTalk protects them with enterprise-grade controls, on every plan."
+        eyebrow="Trust"
+        title="Enterprise-grade security, on every plan."
+        description="Phone calls carry your customers' most personal moments. We protect them with the same controls banks use, and we never charge extra for it."
       />
       <div className="relative mt-12 overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-brand-800 via-brand-600 to-sky-400 px-6 py-10 sm:px-12">
         <div className="bg-dots absolute inset-0 opacity-30 invert" aria-hidden="true" />

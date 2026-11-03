@@ -2,10 +2,10 @@ import { FaqList } from "@/components/ui/FaqList";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ButtonLink } from "@/components/ui/Button";
 
-export function FaqWithContact({ items, title = "Frequently asked questions" }: { items: { q: string; a: string }[]; title?: string }) {
+export function FaqWithContact({ items, title = "Questions, answered" }: { items: { q: string; a: string }[]; title?: string }) {
   return (
     <section className="container-page py-16 sm:py-24">
-      <SectionHeading title={title} description="Everything you need to know about the product and billing." />
+      <SectionHeading title={title} description="The things teams ask us most before switching." />
       <div className="mt-12">
         <FaqList items={items} />
       </div>
@@ -15,10 +15,10 @@ export function FaqWithContact({ items, title = "Frequently asked questions" }: 
           <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-brand-500" />
         </span>
         <div className="flex-1">
-          <p className="font-semibold text-ink-900">Hi, I&apos;m Maya 👋 Still have questions?</p>
-          <p className="text-sm text-ink-500">Can&apos;t find the answer you&apos;re looking for? Our team replies within a few hours.</p>
+          <p className="font-semibold text-ink-900">Prefer talking to a human?</p>
+          <p className="text-sm text-ink-500">Real people, 7 days a week. Median reply time is under two hours.</p>
         </div>
-        <ButtonLink href="/demo">Get in touch</ButtonLink>
+        <ButtonLink href="/demo">Talk to us</ButtonLink>
       </div>
     </section>
   );

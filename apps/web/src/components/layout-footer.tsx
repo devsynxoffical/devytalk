@@ -20,7 +20,7 @@ export function Footer() {
         <div className="max-w-sm">
           <Logo />
           <p className="mt-4 text-[15px] leading-relaxed text-ink-500">
-            The cloud phone system with AI built in. Every call answered, by your team or by AI.
+            The cloud phone system with AI built in, for teams that sell and support over the phone.
           </p>
           <div className="mt-6">
             <p className="mb-2 text-sm font-semibold text-ink-900">Get product updates</p>

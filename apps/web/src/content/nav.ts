@@ -1,37 +1,83 @@
-import { features } from "./features";
+import { BookOpenText, Building, Globe2, Newspaper, type LucideIcon } from "lucide-react";
+import { features, getFeature } from "./features";
 import { solutions } from "./solutions";
+import { posts } from "./blog";
 
-export type NavLink = { label: string; href: string; description?: string };
-export type NavItem = { label: string; href?: string; columns?: { title: string; links: NavLink[] }[] };
+export type NavLink = { label: string; href: string; description?: string; icon?: LucideIcon };
+export type NavFeatured = { eyebrow: string; title: string; body: string; href: string; cta: string };
+export type NavItem = {
+  label: string;
+  href?: string;
+  columns?: { title: string; links: NavLink[] }[];
+  featured?: NavFeatured;
+  footer?: { label: string; href: string };
+};
+
+/** Short, one-line menu descriptions; the longer copy lives on each feature page. */
+const menuBlurb: Record<string, string> = {
+  "cloud-call-center": "Your contact center in a browser tab",
+  "power-dialer": "Work through lists hands-free",
+  "parallel-dialer": "Only connect to real humans",
+  ivr: "Drag-and-drop phone menus",
+  "smart-routing": "The right agent, first time",
+  "global-numbers": "Local numbers in 140+ countries",
+  "call-recording": "Record, search and share calls",
+  analytics: "Live wallboards and reports",
+  "conversation-intelligence": "Transcripts and AI summaries",
+  "ai-voice-agent": "Answers and books meetings 24/7",
+  "ai-coaching": "Scorecards after every call",
+  "sms-whatsapp": "Texts in the same thread",
+};
+
+function featureLinks(slugs: string[]): NavLink[] {
+  return slugs.map((slug) => {
+    const f = getFeature(slug)!;
+    return { label: f.name, href: `/features/${f.slug}`, description: menuBlurb[f.slug] ?? f.short, icon: f.icon };
+  });
+}
+
+const solutionBlurb: Record<string, string> = {
+  sales: "More conversations, less admin",
+  support: "Shorter queues, happier customers",
+  startups: "A pro phone line in minutes",
+  ecommerce: "Order context on every call",
+  enterprise: "SSO, SLAs and data residency",
+  healthcare: "Appointment lines that never ring out",
+};
+
+const latestPost = posts[0];
 
 export const mainNav: NavItem[] = [
   {
     label: "Product",
     columns: [
-      {
-        title: "Calling",
-        links: features.filter((f) => f.group === "Calling").map((f) => ({ label: f.name, href: `/features/${f.slug}`, description: f.short })),
-      },
-      {
-        title: "Routing & insights",
-        links: features
-          .filter((f) => f.group === "Routing" || f.group === "Insights")
-          .map((f) => ({ label: f.name, href: `/features/${f.slug}`, description: f.short })),
-      },
-      {
-        title: "AI",
-        links: [
-          ...features.filter((f) => f.group === "AI").map((f) => ({ label: f.name, href: `/features/${f.slug}`, description: f.short })),
-          { label: "All features", href: "/features", description: "Browse the full platform." },
-        ],
-      },
+      { title: "Calling & routing", links: featureLinks(["cloud-call-center", "power-dialer", "parallel-dialer", "ivr", "smart-routing", "global-numbers"]) },
+      { title: "Insights & AI", links: featureLinks(["call-recording", "analytics", "conversation-intelligence", "ai-voice-agent", "ai-coaching", "sms-whatsapp"]) },
     ],
+    featured: {
+      eyebrow: "New",
+      title: "Meet Devy, the AI Voice Agent",
+      body: "Answers, qualifies and books meetings in 30+ languages, around the clock.",
+      href: "/features/ai-voice-agent",
+      cta: "See how it works",
+    },
+    footer: { label: "Explore all features", href: "/features" },
   },
   {
     label: "Solutions",
     columns: [
-      { title: "By team & industry", links: solutions.map((s) => ({ label: s.name, href: `/solutions/${s.slug}`, description: s.short })) },
+      {
+        title: "By team & industry",
+        links: solutions.map((s) => ({ label: s.name, href: `/solutions/${s.slug}`, description: solutionBlurb[s.slug] ?? s.short, icon: s.icon })),
+      },
     ],
+    featured: {
+      eyebrow: "Customer story",
+      title: "Lumen Health cut abandoned calls by 60%",
+      body: "How 12 clinics book appointments around the clock with an AI agent.",
+      href: "/customers",
+      cta: "Read the story",
+    },
   },
   { label: "Integrations", href: "/integrations" },
   { label: "Pricing", href: "/pricing" },
@@ -41,13 +87,20 @@ export const mainNav: NavItem[] = [
       {
         title: "Learn",
         links: [
-          { label: "Blog", href: "/blog", description: "Guides for sales and support teams." },
-          { label: "Customer stories", href: "/customers", description: "How teams use DevyTalk." },
-          { label: "Phone numbers", href: "/numbers", description: "Coverage and prices by country." },
-          { label: "About us", href: "/about", description: "Our mission and team." },
+          { label: "Blog", href: "/blog", description: "Guides for phone teams", icon: BookOpenText },
+          { label: "Customer stories", href: "/customers", description: "How teams use DevyTalk", icon: Newspaper },
+          { label: "Phone numbers", href: "/numbers", description: "Coverage and prices", icon: Globe2 },
+          { label: "About us", href: "/about", description: "Our mission and team", icon: Building },
         ],
       },
     ],
+    featured: {
+      eyebrow: latestPost.category,
+      title: latestPost.title,
+      body: `${latestPost.readMinutes} min read`,
+      href: `/blog/${latestPost.slug}`,
+      cta: "Read article",
+    },
   },
 ];
 

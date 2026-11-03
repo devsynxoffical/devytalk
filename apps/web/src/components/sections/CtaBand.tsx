@@ -2,8 +2,8 @@ import { ArrowRight, Check } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
 
 export function CtaBand({
-  title = "Every call answered. Starting today.",
-  description = "Free for 14 days. No credit card. Your first call in five minutes.",
+  title = "Your next great conversation starts here.",
+  description = "Try DevyTalk free for 14 days. Set up in five minutes, cancel in one click.",
 }: { title?: string; description?: string }) {
   return (
     <section className="container-page py-16 sm:py-24">
