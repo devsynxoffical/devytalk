@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { useLeadSubmit } from "./useLeadSubmit";
 
 export function NewsletterForm() {
@@ -15,15 +15,15 @@ export function NewsletterForm() {
 
   if (status === "success") {
     return (
-      <p className="flex items-center gap-2 text-sm text-brand-300">
-        <Check className="size-4" /> You are subscribed. Watch your inbox.
+      <p className="flex items-center gap-2 text-sm font-medium text-brand-700" role="status">
+        <Check className="size-4" aria-hidden="true" /> You&apos;re subscribed. Watch your inbox.
       </p>
     );
   }
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      <div className="flex rounded-full border border-white/15 bg-white/5 p-1 focus-within:border-brand-400">
+      <div className="flex rounded-xl border border-ink-200 bg-white p-1 transition-colors focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100">
         <label htmlFor="newsletter-email" className="sr-only">
           Work email
         </label>
@@ -34,18 +34,18 @@ export function NewsletterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
-          className="min-w-0 flex-1 bg-transparent px-4 text-sm text-white placeholder:text-ink-500 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none"
         />
         <button
           type="submit"
           disabled={status === "submitting"}
           aria-label="Subscribe"
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-400 disabled:opacity-60"
+          className="grid size-9 shrink-0 place-items-center rounded-lg bg-ink-900 text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
         >
-          <ArrowRight className="size-4" />
+          {status === "submitting" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ArrowRight className="size-4" aria-hidden="true" />}
         </button>
       </div>
-      {status === "error" && <p className="mt-2 text-xs text-red-300">{fields.email ?? error}</p>}
+      {status === "error" && <p className="mt-2 text-xs font-medium text-red-600">{fields.email ?? error}</p>}
     </form>
   );
 }

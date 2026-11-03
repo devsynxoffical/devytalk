@@ -30,7 +30,7 @@ export function NumbersBrowser() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search a country"
-            className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-11 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-xl border border-ink-200 bg-white py-2.5 pl-11 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
           />
         </div>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Number type">
@@ -41,8 +41,8 @@ export function NumbersBrowser() {
               aria-pressed={type === t}
               onClick={() => setType(t)}
               className={cn(
-                "rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
-                type === t ? "border-ink-900 bg-ink-900 text-white" : "border-ink-200 bg-white text-ink-600 hover:border-brand-400",
+                "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
+                type === t ? "border-ink-900 bg-ink-900 text-white" : "border-ink-100 bg-white text-ink-600 hover:border-brand-300",
               )}
             >
               {t}
@@ -51,9 +51,9 @@ export function NumbersBrowser() {
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-ink-200 bg-white">
+      <div className="shadow-card mt-6 overflow-x-auto rounded-2xl border border-ink-100 bg-white">
         <table className="w-full min-w-[36rem] text-left text-sm">
-          <thead className="border-b border-ink-200 bg-ink-50 text-xs uppercase tracking-widest text-ink-500">
+          <thead className="border-b border-ink-100 bg-brand-50/50 text-xs uppercase tracking-[0.14em] text-brand-800">
             <tr>
               <th scope="col" className="p-4">Country</th>
               <th scope="col" className="p-4">Region</th>

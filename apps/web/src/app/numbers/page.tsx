@@ -16,7 +16,7 @@ export default function NumbersPage() {
         title="Local numbers wherever your customers are"
         description="Buy numbers instantly or port your existing ones for free. Prices below are per number, per month."
       />
-      <section className="container-page py-16">
+      <section className="container-page pb-16 sm:pb-24">
         <NumbersBrowser />
         <p className="mt-4 text-xs text-ink-400">Showing a selection of popular countries. Some numbers require local address or identity documents.</p>
       </section>

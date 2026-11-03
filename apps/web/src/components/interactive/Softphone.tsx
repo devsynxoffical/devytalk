@@ -53,7 +53,7 @@ export function Softphone() {
 
   return (
     <div className="relative mx-auto w-full max-w-sm">
-      <div className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-brand-400/30 to-accent-400/20 blur-2xl" aria-hidden="true" />
+      <div className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-brand-300/40 to-sky-300/30 blur-2xl" aria-hidden="true" />
       <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-ink-800/90 p-5 shadow-2xl backdrop-blur">
         <div className="flex items-center justify-between text-xs text-ink-300">
           <span className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export function Softphone() {
         ) : (
           <div className="mt-4 h-[11.25rem] space-y-2 overflow-hidden rounded-2xl bg-ink-900/70 p-3 text-left">
             <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-ink-400">
-              <Sparkles className="size-3 text-accent-400" /> Live transcript
+              <Sparkles className="size-3 text-lime-400" /> Live transcript
             </p>
             {state === "ringing" && <p className="text-sm text-ink-400">Waiting for answer…</p>}
             {TRANSCRIPT.slice(0, shown).map((line) => (
@@ -97,7 +97,7 @@ export function Softphone() {
                 key={line.text}
                 className={cn(
                   "text-sm",
-                  line.who === "AI" ? "rounded-lg bg-accent-400/10 px-2 py-1 text-accent-300" : "text-ink-200",
+                  line.who === "AI" ? "rounded-lg bg-lime-400/15 px-2 py-1 text-lime-300" : "text-ink-200",
                 )}
               >
                 <span className="font-semibold text-white">{line.who}: </span>

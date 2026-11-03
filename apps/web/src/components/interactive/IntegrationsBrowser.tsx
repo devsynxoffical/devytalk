@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { integrationCategories, integrations, type IntegrationCategory } from "@/content/integrations";
 import { cn } from "@/lib/cn";
+import { AppIcon } from "@/components/brand/AppIcon";
 
 export function IntegrationsBrowser() {
   const [query, setQuery] = useState("");
@@ -27,8 +28,8 @@ export function IntegrationsBrowser() {
               aria-pressed={category === c}
               onClick={() => setCategory(c)}
               className={cn(
-                "rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
-                category === c ? "border-ink-900 bg-ink-900 text-white" : "border-ink-200 bg-white text-ink-600 hover:border-brand-400",
+                "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
+                category === c ? "border-ink-900 bg-ink-900 text-white" : "border-ink-100 bg-white text-ink-600 hover:border-brand-300",
               )}
             >
               {c}
@@ -44,7 +45,7 @@ export function IntegrationsBrowser() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search integrations"
-            className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-11 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-xl border border-ink-200 bg-white py-2.5 pl-11 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
           />
         </div>
       </div>
@@ -59,15 +60,13 @@ export function IntegrationsBrowser() {
           <p className="mt-1 text-sm text-ink-500">Connect anything else through Zapier, Make, webhooks or the REST API.</p>
         </div>
       ) : (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 grid grid-cols-1 [&>*]:min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((i) => (
-            <li key={i.name} className="group rounded-2xl border border-ink-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg">
+            <li key={i.name} className="group shadow-card rounded-2xl border border-ink-100 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-brand-200">
               <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-xl text-sm font-extrabold text-white" style={{ backgroundColor: i.color }} aria-hidden="true">
-                  {i.name.slice(0, 2)}
-                </span>
+                <AppIcon icon={i.icon} name={i.name} color={i.color} size="sm" />
                 <div>
-                  <p className="font-bold text-ink-900">{i.name}</p>
+                  <p className="font-semibold text-ink-900">{i.name}</p>
                   <p className="text-xs text-ink-500">{i.category}</p>
                 </div>
                 {i.popular && <span className="ml-auto rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">Popular</span>}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const leadKinds = ["demo", "trial", "contact", "newsletter"] as const;
+export const leadKinds = ["demo", "trial", "contact", "newsletter", "callback"] as const;
 export const teamSizes = ["1-5", "6-20", "21-50", "51-200", "200+"] as const;
 
 const optionalText = (max: number) =>
@@ -30,7 +30,10 @@ export const leadSchema = z
     website: z.string().max(0, "Spam detected").optional(),
   })
   .superRefine((lead, ctx) => {
-    if (lead.kind !== "newsletter" && !lead.name) {
+    if (lead.kind === "callback" && (!lead.phone || lead.phone.replace(/\D/g, "").length < 6)) {
+      ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter the number we should call" });
+    }
+    if (lead.kind !== "newsletter" && lead.kind !== "callback" && !lead.name) {
       ctx.addIssue({ code: "custom", path: ["name"], message: "Please tell us your name" });
     }
     if ((lead.kind === "demo" || lead.kind === "trial") && !lead.company) {

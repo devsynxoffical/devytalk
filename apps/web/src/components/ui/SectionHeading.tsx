@@ -1,25 +1,33 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Eyebrow } from "./Eyebrow";
 
-export function SectionHeading({
-  eyebrow,
-  title,
-  description,
-  align = "center",
-  inverted = false,
-}: {
+type Props = {
   eyebrow?: string;
-  title: string;
-  description?: string;
-  align?: "center" | "left";
-  inverted?: boolean;
-}) {
+  title: ReactNode;
+  description?: ReactNode;
+  /** center: stacked & centered. split: title left, description right (CloudTalk-style). left: stacked left. */
+  layout?: "center" | "split" | "left";
+  className?: string;
+};
+
+export function SectionHeading({ eyebrow, title, description, layout = "center", className }: Props) {
+  if (layout === "split") {
+    return (
+      <div className={cn("grid gap-6 md:grid-cols-2 md:items-end md:gap-16", className)}>
+        <div>
+          {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
+          <h2 className="text-3xl font-semibold leading-[1.1] tracking-tight text-balance text-ink-900 sm:text-[2.6rem]">{title}</h2>
+        </div>
+        {description && <p className="text-lg leading-relaxed text-ink-500 text-pretty">{description}</p>}
+      </div>
+    );
+  }
   return (
-    <div className={cn("max-w-3xl", align === "center" && "mx-auto text-center")}>
-      {eyebrow && (
-        <p className={cn("mb-3 text-sm font-bold uppercase tracking-[0.18em]", inverted ? "text-brand-300" : "text-brand-600")}>{eyebrow}</p>
-      )}
-      <h2 className={cn("text-3xl font-extrabold tracking-tight text-balance sm:text-4xl", inverted ? "text-white" : "text-ink-900")}>{title}</h2>
-      {description && <p className={cn("mt-4 text-lg text-pretty", inverted ? "text-ink-300" : "text-ink-500")}>{description}</p>}
+    <div className={cn("max-w-2xl", layout === "center" && "mx-auto text-center", className)}>
+      {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
+      <h2 className="text-3xl font-semibold leading-[1.1] tracking-tight text-balance text-ink-900 sm:text-[2.6rem]">{title}</h2>
+      {description && <p className="mt-4 text-lg leading-relaxed text-ink-500 text-pretty">{description}</p>}
     </div>
   );
 }
