@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Activity, LayoutDashboard, LogOut, Megaphone, Menu, Search, X, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Activity, BarChart3, Bell, FlaskConical, LayoutDashboard, LogOut, Megaphone, Menu, Search, Sparkles, Users, X, type LucideIcon } from "lucide-react";
 import { LogoMark } from "@/components/ui/Logo";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { campaignListSchema, jobsSchema } from "@/lib/api/schemas";
@@ -43,7 +43,20 @@ export function Shell({ children }: { children: ReactNode }) {
   const campaigns = useApi(backendUrl(["campaigns"]), campaignListSchema);
   const jobs = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
 
+  const searchInput = useRef<HTMLInputElement>(null);
+
   useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    // Ctrl or Command + K jumps to the search field from anywhere in the dashboard.
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInput.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   async function signOut() {
     setLeaving(true);
@@ -58,14 +71,33 @@ export function Shell({ children }: { children: ReactNode }) {
   }
 
   const failed = jobs.data?.stats.dead ?? 0;
+  const paused = campaigns.data?.filter((c) => c.stop_reason).length ?? 0;
+  const alerts = failed + paused;
+  // Inside a campaign, its sections are one click away in the sidebar as well.
+  const inCampaign = pathname.match(/^\/dashboard\/campaigns\/([^/]+)/);
+  const campaignBase = inCampaign ? `/dashboard/campaigns/${inCampaign[1]}` : null;
+  const campaignName = inCampaign ? decodeURIComponent(inCampaign[1]) : "";
   const groups: { title: string; items: Item[] }[] = [
     {
       title: "Main",
       items: [
         { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
-        { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, badge: campaigns.data ? campaigns.data.length : undefined },
+        { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, exact: Boolean(campaignBase), badge: campaigns.data ? campaigns.data.length : undefined },
       ],
     },
+    ...(campaignBase
+      ? [
+          {
+            title: campaignName,
+            items: [
+              { href: campaignBase, label: "Performance", icon: BarChart3, exact: true },
+              { href: `${campaignBase}/leads`, label: "Leads", icon: Users },
+              { href: `${campaignBase}/playbook`, label: "Coach & playbook", icon: Sparkles },
+              { href: `${campaignBase}/experiments`, label: "A/B tests", icon: FlaskConical },
+            ],
+          },
+        ]
+      : []),
     {
       title: "System",
       items: [{ href: "/dashboard/system", label: "Background work", icon: Activity, badge: failed > 0 ? `${failed} failed` : undefined, alert: failed > 0 }],
@@ -86,7 +118,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <nav aria-label="Dashboard" className="flex flex-1 flex-col gap-5">
         {groups.map((group) => (
           <div key={group.title}>
-            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-ink-400">{group.title}</p>
+            <p className="mb-1.5 truncate px-3 text-[10px] font-semibold uppercase tracking-widest text-ink-400">{group.title}</p>
             <div className="space-y-0.5">
               {group.items.map((item) => (
                 <NavLink key={item.href} item={item} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
@@ -131,19 +163,36 @@ export function Shell({ children }: { children: ReactNode }) {
             <form onSubmit={search} role="search" className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-400" aria-hidden="true" />
               <input
+                ref={searchInput}
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search campaigns"
                 placeholder="Search campaigns…"
-                className="h-10 w-full rounded-xl border border-ink-100 bg-white pl-9 pr-3 text-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+                className="h-10 w-full rounded-xl border border-ink-100 bg-white pl-9 pr-12 text-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
               />
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md bg-ink-50 px-1.5 py-0.5 text-[10px] font-semibold text-ink-500 ring-1 ring-ink-100 sm:block" aria-hidden="true">
+                ⌘K
+              </kbd>
             </form>
-            <div className="ml-auto flex items-center gap-2.5 rounded-xl bg-white px-3 py-1.5 ring-1 ring-ink-100">
-              <span className="grid size-7 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-800" aria-hidden="true">
-                O
-              </span>
-              <span className="hidden text-sm font-medium text-ink-700 sm:block">Operator</span>
+            <div className="ml-auto flex items-center gap-2">
+              <Link
+                href="/dashboard"
+                aria-label={alerts > 0 ? `${alerts} ${alerts === 1 ? "item needs" : "items need"} your attention` : "Nothing needs your attention"}
+                className="relative grid size-10 place-items-center rounded-xl bg-white text-ink-600 ring-1 ring-ink-100 hover:text-ink-900"
+              >
+                <Bell className="size-[18px]" aria-hidden="true" />
+                {alerts > 0 && <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500 ring-2 ring-white" aria-hidden="true" />}
+              </Link>
+              <div className="flex items-center gap-2.5 rounded-xl bg-white py-1.5 pl-1.5 pr-3 ring-1 ring-ink-100">
+                <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 text-xs font-bold text-white" aria-hidden="true">
+                  OP
+                </span>
+                <span className="hidden leading-tight sm:block">
+                  <span className="block text-sm font-semibold text-ink-900">Operator</span>
+                  <span className="block text-[11px] text-ink-500">Signed in with access token</span>
+                </span>
+              </div>
             </div>
           </header>
           <main id="main" className="px-4 pb-10 pt-6 sm:px-6 lg:px-7">

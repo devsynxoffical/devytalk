@@ -53,7 +53,7 @@ test("signing in keeps the token away from page scripts and lists the campaigns"
   await page.goto("/login");
   await page.getByLabel("Access token").fill(TOKEN);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back", level: 1 })).toBeVisible();
   await page.goto("/dashboard/campaigns");
   await expect(page.getByRole("heading", { name: "Campaigns", level: 1 })).toBeVisible();
   for (const name of [ACCOUNTING, DENTAL, EMPTY]) await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
@@ -74,20 +74,31 @@ test("the overview adds up real results across campaigns and lists what needs a 
   await expect(page.getByTestId("tile-calls").getByRole("img", { name: "Share of calls answered: 97%" })).toBeVisible();
   await expect(page.getByTestId("tile-conversions")).toContainText("36");
   await expect(page.getByTestId("tile-conversions").getByRole("img", { name: "Conversion rate: 23%" })).toBeVisible();
-  await expect(page.getByTestId("tile-hot")).toContainText("16");
+  // The sidebar's bell says something is waiting (one campaign paused itself).
+  await expect(page.getByRole("link", { name: "1 item needs your attention" })).toBeVisible();
+
+  // Calls per day come from the engine: 14 days, and their total is the number of calls in the window.
+  const timeline = page.getByTestId("timeline");
+  await expect(timeline.getByRole("img", { name: "Calls placed per day" })).toBeVisible();
+  await expect(timeline.locator("table tbody tr")).toHaveCount(14);
+  await expect(page.getByText("Last 14 days · 159 calls placed")).toBeVisible();
+  await page.getByLabel("Show").selectOption("conversions");
+  await expect(page.getByText("Last 14 days · 36 conversions")).toBeVisible();
   // Only one campaign has a budget; the other's spend is named, not folded into the ring.
   await expect(page.getByTestId("tile-spend")).toContainText("$32.05");
-  await expect(page.getByTestId("tile-spend")).toContainText("/ $32.00");
-  await expect(page.getByTestId("tile-spend")).toContainText("$45.00 more spent by 2 without a budget");
+  await expect(page.getByTestId("tile-spend")).toContainText("of $32.00 budgeted");
+  await expect(page.getByTestId("tile-spend")).toContainText("$45.00 unbudgeted");
 
   const ranking = page.getByTestId("campaign-ranking").getByRole("listitem");
   await expect(ranking.nth(0)).toContainText(ACCOUNTING);
   await expect(ranking.nth(0)).toContainText("25.0%");
+  await expect(ranking.nth(0).getByRole("img", { name: "Accounting firms Q4 conversion rate: 25%" })).toBeVisible();
   await expect(ranking.nth(1)).toContainText("22.2%");
   await expect(ranking.nth(2)).toContainText("No answered calls"); // no rate is invented for a campaign with no calls
 
   await expect(page.getByTestId("outcomes")).toContainText("Not interested");
   await expect(page.getByTestId("hot-leads").getByRole("listitem").first()).toContainText("Maria Okafor");
+  await expect(page.getByText("16 of 42 scored leads are hot")).toBeVisible();
 
   const attention = page.getByTestId("attention");
   await expect(attention).toContainText("2 statements the playbook does not support");

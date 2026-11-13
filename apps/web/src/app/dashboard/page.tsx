@@ -11,6 +11,7 @@ import {
   jobsSchema,
   leadListSchema,
   reportSchema,
+  timelineSchema,
   versionListSchema,
   type Campaign,
   type Experiment,
@@ -19,6 +20,7 @@ import {
   type Version,
 } from "@/lib/api/schemas";
 import { EmptyState, ErrorState, Loading, Pill, type Tone } from "@/components/dashboard/ui";
+import { AreaChart } from "@/components/dashboard/AreaChart";
 import { BarRow, Panel, Ring, SERIES, STATUS, StatTile } from "@/components/dashboard/viz";
 import { cn } from "@/lib/cn";
 
@@ -148,6 +150,53 @@ function SystemCard() {
               </>
             )}
           </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link href="/dashboard/system" className="inline-flex h-9 items-center justify-center rounded-lg bg-brand-50 text-sm font-semibold text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-100">
+              View work
+            </Link>
+            <Link href="/dashboard/campaigns" className="inline-flex h-9 items-center justify-center rounded-lg bg-ink-100 text-sm font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:bg-ink-200">
+              Campaigns
+            </Link>
+          </div>
+        </>
+      ) : null}
+    </Panel>
+  );
+}
+
+const MEASURES = { calls: "Calls placed", answered: "Calls answered", conversions: "Conversions" } as const;
+type Measure = keyof typeof MEASURES;
+const MEASURE_COLOR: Record<Measure, string> = { calls: SERIES.blue.mark, answered: SERIES.blue.mark, conversions: SERIES.aqua.mark };
+
+function ActivityCard() {
+  const { data, error, loading, reload } = useApi(backendUrl(["timeline"], { days: 14 }), timelineSchema);
+  const [measure, setMeasure] = useState<Measure>("calls");
+  const total = data?.days.reduce((sum, day) => sum + day[measure], 0) ?? 0;
+  return (
+    <Panel
+      title="Call activity"
+      hint={data ? `Last ${data.days.length} days · ${count(total)} ${MEASURES[measure].toLowerCase()}` : "Last 14 days"}
+      action={
+        <label>
+          <span className="sr-only">Show</span>
+          <select value={measure} onChange={(e) => setMeasure(e.target.value as Measure)} className="h-9 rounded-xl border border-ink-100 bg-ink-50 px-3 text-sm font-medium text-ink-800 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">
+            {Object.entries(MEASURES).map(([key, text]) => (
+              <option key={key} value={key}>
+                {text}
+              </option>
+            ))}
+          </select>
+        </label>
+      }
+    >
+      {loading && !data ? (
+        <div className="grid h-[250px] place-items-center text-sm text-ink-500">Loading…</div>
+      ) : error ? (
+        <ErrorState message={error.message} onRetry={reload} />
+      ) : data ? (
+        <>
+          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={MEASURE_COLOR[measure]} />
+          {total === 0 && <p className="mt-1 text-center text-xs text-ink-500">No {MEASURES[measure].toLowerCase()} in this period.</p>}
         </>
       ) : null}
     </Panel>
@@ -162,8 +211,8 @@ export default function OverviewPage() {
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-900">Overview</h1>
-        <p className="mt-1 text-sm text-ink-500">How your calling campaigns are doing right now.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink-900">Welcome back</h1>
+        <p className="mt-1 text-sm text-ink-500">Here is how your calling campaigns are doing today.</p>
       </div>
       <Link href="/dashboard/campaigns" className="inline-flex h-10 items-center gap-2 rounded-xl bg-ink-900 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ink-800">
         All campaigns <ArrowRight className="size-4" aria-hidden="true" />
@@ -205,7 +254,6 @@ export default function OverviewPage() {
   const ranked = items
     .map((d) => ({ d, rate: d.report.calls.conversion_rate }))
     .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1));
-  const topRate = Math.max(0, ...ranked.map((r) => r.rate ?? 0));
 
   const outcomes = new Map<string, number>();
   for (const d of items) for (const [name, n] of Object.entries(d.report.calls.dispositions)) outcomes.set(name, (outcomes.get(name) ?? 0) + n);
@@ -232,7 +280,7 @@ export default function OverviewPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] [&>*]:min-w-0">
         <div className="min-w-0 space-y-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4 [&>*]:min-w-0">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
             <StatTile
               testId="tile-calls"
               label="Calls answered"
@@ -249,31 +297,20 @@ export default function OverviewPage() {
               note="Meetings booked and sales, of answered calls"
               ring={<Ring share={answered > 0 ? conversions / answered : null} tint={SERIES.aqua} label="Conversion rate" />}
             />
-            <StatTile
-              testId="tile-hot"
-              label="Hot leads"
-              value={count(hot)}
-              total={count(scored)}
-              note={scored === 0 ? "No lead has been scored yet" : "of leads with evidence from a call"}
-              ring={<Ring share={scored > 0 ? hot / scored : null} tint={SERIES.orange} label="Share of scored leads that are hot" />}
-            />
             {budgetShare ? (
               <StatTile
                 testId="tile-spend"
                 label="Budget used"
                 value={money(budgetSpend)}
-                total={money(budget)}
-                note={
-                  budgeted.length === items.length
-                    ? `${money(budgetShare.remaining)} left`
-                    : `${money(budgetShare.remaining)} left · ${money(spend - budgetSpend)} more spent by ${count(items.length - budgeted.length)} without a budget`
-                }
+                note={`of ${money(budget)} budgeted${budgeted.length === items.length ? "" : ` · ${money(spend - budgetSpend)} unbudgeted`}`}
                 ring={<Ring share={budgetShare.share} tint={budgetTint} label="Budget used" />}
               />
             ) : (
               <StatTile testId="tile-spend" label="Spend" value={money(spend)} note="No budget is set on any campaign" />
             )}
           </div>
+
+          <ActivityCard />
 
           <Panel title="Call outcomes" hint="How every call ended, across all campaigns" action={<span className="text-xs text-ink-500">{count(calls)} calls</span>}>
             {shown.length === 0 ? (
@@ -288,7 +325,7 @@ export default function OverviewPage() {
           </Panel>
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-            <Panel title="Hot leads" hint="Highest scores first, from what prospects said" action={<Link href="/dashboard/campaigns" className="text-xs font-semibold text-brand-700 hover:underline">All campaigns</Link>}>
+            <Panel title="Hot leads" hint={scored > 0 ? `${count(hot)} of ${count(scored)} scored leads are hot` : "Scored from what prospects said"} action={<Link href="/dashboard/campaigns" className="text-xs font-semibold text-ink-600 hover:text-ink-900">View all →</Link>}>
               {hotLeads.length === 0 ? (
                 <p className="text-sm text-ink-500">No lead is hot yet. Scores appear once calls give evidence of need, authority and timing.</p>
               ) : (
@@ -340,29 +377,24 @@ export default function OverviewPage() {
         </div>
 
         <div className="space-y-5">
-          <Panel title="Campaigns" hint="Conversion rate of answered calls">
-            <ul className="space-y-4" data-testid="campaign-ranking">
+          <Panel title="Top campaigns" hint="Conversion rate of answered calls">
+            <ul className="space-y-1" data-testid="campaign-ranking">
               {ranked.map(({ d, rate }) => (
                 <li key={d.campaign.id}>
-                  <Link href={campaignHref(d.campaign.name)} className="-mx-2 block rounded-xl px-2 py-1.5 hover:bg-ink-50">
-                    <BarRow
-                      name={
-                        <span className="flex items-center gap-2">
-                          <span className="truncate">{d.campaign.name}</span>
-                          <Pill tone={STATUS_TONE[d.campaign.status] ?? "gray"}>{d.campaign.running ? "Dialing" : d.campaign.status}</Pill>
-                        </span>
-                      }
-                      share={rate !== null && topRate > 0 ? rate / topRate : 0}
-                      figure={rate === null ? "No answered calls" : percent(rate)}
-                      muted={rate === null}
-                      tint={SERIES.aqua}
-                      detail={rate === null ? undefined : `${count(d.report.calls.conversions)} of ${count(d.report.calls.answered)} answered${d.report.calls.answered < 30 ? " · few calls so far" : ""}`}
-                    />
+                  <Link href={campaignHref(d.campaign.name)} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-ink-50">
+                    <Ring share={rate} tint={rate === null ? STATUS.none : SERIES.aqua} label={`${d.campaign.name} conversion rate`} size={44} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-ink-900">{d.campaign.name}</span>
+                      <span className="block truncate text-xs text-ink-500">
+                        {rate === null ? "No answered calls" : `${percent(rate)} · ${count(d.report.calls.conversions)} of ${count(d.report.calls.answered)} answered${d.report.calls.answered < 30 ? " · few calls" : ""}`}
+                      </span>
+                    </span>
+                    <Pill tone={STATUS_TONE[d.campaign.status] ?? "gray"}>{d.campaign.running ? "Dialing" : label(d.campaign.status)}</Pill>
                   </Link>
                 </li>
               ))}
             </ul>
-            <Link href="/dashboard/campaigns" className="mt-4 flex items-center justify-center gap-1 text-xs font-semibold text-ink-600 hover:text-ink-900">
+            <Link href="/dashboard/campaigns" className="mt-3 flex items-center justify-center gap-1 text-xs font-semibold text-ink-600 hover:text-ink-900">
               See all campaigns <ChevronRight className="size-3.5" aria-hidden="true" />
             </Link>
           </Panel>

@@ -232,3 +232,9 @@ export const jobsSchema = z.object({
 export type Jobs = z.infer<typeof jobsSchema>;
 
 export const okSchema = z.object({ ok: z.boolean() });
+
+export const timelineSchema = z.object({
+  timezone: z.string(),
+  days: z.array(z.object({ date: z.string(), calls: z.number(), answered: z.number(), conversions: z.number() })),
+});
+export type Timeline = z.infer<typeof timelineSchema>;

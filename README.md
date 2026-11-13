@@ -53,7 +53,7 @@ It adds no data of its own: every number is read from the engine's API.
 
 | Screen | What it shows |
 | --- | --- |
-| Overview | Totals across campaigns (calls answered, conversions, hot leads, budget used) as tiles with progress rings, how calls ended, campaigns compared by conversion rate, the hottest leads, and a "needs your attention" list: automatic pauses, playbook drafts waiting for a decision, A/B tests with a result, unsupported statements, failed background work |
+| Overview | Totals across campaigns (calls answered, conversions, budget used) as tiles with progress rings, a calls-per-day chart for the last 14 days, how calls ended, campaigns ranked by conversion rate, the hottest leads, and a "needs your attention" list: automatic pauses, playbook drafts waiting for a decision, A/B tests with a result, unsupported statements, failed background work |
 | Campaigns | Every campaign with status, budget use and the reason for an automatic pause. The search box in the top bar filters this list |
 | Performance | Calls, answered, conversions, conversion rate, cost per conversion, budget spent and remaining, objections ranked with handled rate, lost reasons, competitors, results by playbook version and by language |
 | Leads | Score and hot/warm/cold category, buying intent, status, recommended next action; filters for all of these; a detail panel with the evidence behind each score factor, quotes, objections, lost reason and call transcripts |
@@ -64,8 +64,8 @@ It adds no data of its own: every number is read from the engine's API.
 Layout: a grouped sidebar, a top bar with campaign search, and white cards on a soft
 grey canvas. Chart colours live in `src/components/dashboard/viz.tsx`: three series
 hues that stay distinguishable for colour-blind readers, and status colours that are
-always paired with an icon and a label. There are no trend lines or "vs yesterday"
-figures, because the engine does not keep history to draw them from; nothing on the
+always paired with an icon and a label. The activity chart is drawn from the engine's
+`/api/timeline`; there are no "vs yesterday" figures or targets, and nothing on the
 page is estimated or filled in.
 
 Rules the dashboard keeps:

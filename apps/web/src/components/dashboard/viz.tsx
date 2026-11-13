@@ -31,7 +31,7 @@ type Tint = { mark: string; track: string };
 
 /** One ratio against its whole, as a ring with the figure printed inside. `share = null` means there is nothing to measure yet. */
 export function Ring({ share, tint, label, size = 60 }: { share: number | null; tint: Tint; label: string; size?: number }) {
-  const stroke = 6;
+  const stroke = size < 50 ? 4.5 : 6;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const clamped = share === null ? 0 : Math.max(0, Math.min(1, share));
@@ -53,7 +53,7 @@ export function Ring({ share, tint, label, size = 60 }: { share: number | null; 
           className="transition-[stroke-dasharray] duration-700"
         />
       )}
-      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" className="fill-ink-900 text-[13px] font-semibold">
+      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" className={cn("fill-ink-900 font-semibold", size < 50 ? "text-[11px]" : "text-[13px]")}>
         {text}
       </text>
     </svg>
