@@ -31,7 +31,7 @@ function alertWith(text: string) {
 }
 
 async function openCampaign(page: Page, name: string, tab?: string) {
-  await page.goto("/dashboard");
+  await page.goto("/dashboard/campaigns");
   await page.getByRole("link", { name: new RegExp(name.replace(/[()]/g, "\\$&")) }).click();
   await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
   if (tab) await page.getByRole("navigation", { name: "Campaign sections" }).getByRole("link", { name: tab }).click();
@@ -53,6 +53,8 @@ test("signing in keeps the token away from page scripts and lists the campaigns"
   await page.goto("/login");
   await page.getByLabel("Access token").fill(TOKEN);
   await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+  await page.goto("/dashboard/campaigns");
   await expect(page.getByRole("heading", { name: "Campaigns", level: 1 })).toBeVisible();
   for (const name of [ACCOUNTING, DENTAL, EMPTY]) await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
   await expect(page.getByText("Paused automatically: the budget of $32.00 was reached (spent $32.05)")).toBeVisible();
@@ -62,6 +64,48 @@ test("signing in keeps the token away from page scripts and lists the campaigns"
   expect(session?.sameSite).toBe("Strict");
   expect(await page.evaluate(() => document.cookie)).not.toContain(TOKEN);
   expect(await page.content()).not.toContain(TOKEN);
+});
+
+test("the overview adds up real results across campaigns and lists what needs a decision", async () => {
+  await page.goto("/dashboard");
+  // 69 + 90 + 0 calls, 64 + 90 answered, 16 + 20 conversions: sums of what each campaign's report says.
+  await expect(page.getByTestId("tile-calls")).toContainText("154");
+  await expect(page.getByTestId("tile-calls")).toContainText("/ 159");
+  await expect(page.getByTestId("tile-calls").getByRole("img", { name: "Share of calls answered: 97%" })).toBeVisible();
+  await expect(page.getByTestId("tile-conversions")).toContainText("36");
+  await expect(page.getByTestId("tile-conversions").getByRole("img", { name: "Conversion rate: 23%" })).toBeVisible();
+  await expect(page.getByTestId("tile-hot")).toContainText("16");
+  // Only one campaign has a budget; the other's spend is named, not folded into the ring.
+  await expect(page.getByTestId("tile-spend")).toContainText("$32.05");
+  await expect(page.getByTestId("tile-spend")).toContainText("/ $32.00");
+  await expect(page.getByTestId("tile-spend")).toContainText("$45.00 more spent by 2 without a budget");
+
+  const ranking = page.getByTestId("campaign-ranking").getByRole("listitem");
+  await expect(ranking.nth(0)).toContainText(ACCOUNTING);
+  await expect(ranking.nth(0)).toContainText("25.0%");
+  await expect(ranking.nth(1)).toContainText("22.2%");
+  await expect(ranking.nth(2)).toContainText("No answered calls"); // no rate is invented for a campaign with no calls
+
+  await expect(page.getByTestId("outcomes")).toContainText("Not interested");
+  await expect(page.getByTestId("hot-leads").getByRole("listitem").first()).toContainText("Maria Okafor");
+
+  const attention = page.getByTestId("attention");
+  await expect(attention).toContainText("2 statements the playbook does not support");
+  await expect(attention).toContainText("Accounting firms Q4 paused itself");
+  await expect(attention).toContainText("Playbook version 3 is waiting for your decision");
+  await expect(attention).toContainText("the new version is ahead");
+  await attention.getByRole("link", { name: /the new version is ahead/ }).click();
+  await expect(page).toHaveURL(/Dental%20clinics%20pilot\/experiments/);
+
+  // Search in the top bar narrows the campaign list.
+  await page.getByRole("searchbox", { name: "Search campaigns" }).fill("dental");
+  await page.getByRole("searchbox", { name: "Search campaigns" }).press("Enter");
+  await expect(page.getByRole("heading", { name: DENTAL, level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: ACCOUNTING, level: 2 })).toHaveCount(0);
+
+  await page.getByRole("navigation", { name: "Dashboard" }).getByRole("link", { name: "Background work" }).click();
+  await expect(page.getByRole("heading", { name: "Background work", level: 1 })).toBeVisible();
+  await expect(page.getByText("No background work yet")).toBeVisible();
 });
 
 test("a campaign's sales performance is shown as the engine counted it", async () => {
@@ -122,7 +166,7 @@ test("lead intelligence: filters, scores with their evidence, objections and nex
   await expect(page.locator("tbody tr")).toContainText(["Daniel Reyes"]);
   await page.getByLabel("Status").selectOption("");
 
-  await page.getByLabel("Search").fill("okafor");
+  await page.getByLabel("Search leads").fill("okafor");
   await expect(page.getByText("1 lead match")).toBeVisible();
   await page.getByRole("button", { name: "Maria Okafor" }).click();
 
@@ -282,7 +326,7 @@ test("errors from the engine are shown with a way to retry", async () => {
 
   // A response of the wrong shape is refused rather than half-rendered.
   await page.route("**/api/backend/campaigns", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "x" }]) }));
-  await page.goto("/dashboard");
+  await page.goto("/dashboard/campaigns");
   await expect(alertWith("data this page does not understand")).toBeVisible();
   await page.unroute("**/api/backend/campaigns");
 

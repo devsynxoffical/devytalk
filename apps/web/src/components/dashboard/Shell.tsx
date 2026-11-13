@@ -2,15 +2,48 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { LayoutGrid, LogOut } from "lucide-react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Activity, LayoutDashboard, LogOut, Megaphone, Menu, Search, X, type LucideIcon } from "lucide-react";
 import { LogoMark } from "@/components/ui/Logo";
+import { backendUrl, useApi } from "@/lib/api/client";
+import { campaignListSchema, jobsSchema } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
 
-export function Shell({ children }: { children: React.ReactNode }) {
+type Item = { href: string; label: string; icon: LucideIcon; exact?: boolean; badge?: ReactNode; alert?: boolean };
+
+function NavLink({ item, pathname, onNavigate }: { item: Item; pathname: string; onNavigate: () => void }) {
+  const active = item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/");
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+        active ? "bg-white text-ink-900 shadow-sm ring-1 ring-ink-100" : "text-ink-600 hover:bg-white/70 hover:text-ink-900",
+      )}
+    >
+      {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-brand-600" aria-hidden="true" />}
+      <item.icon className={cn("size-4", active ? "text-brand-700" : "text-ink-400")} aria-hidden="true" />
+      <span className="flex-1">{item.label}</span>
+      {item.badge !== undefined && item.badge !== null && (
+        <span className={cn("rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums", item.alert ? "bg-red-50 text-red-700" : "bg-ink-100 text-ink-600")}>{item.badge}</span>
+      )}
+    </Link>
+  );
+}
+
+export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  // Counts for the sidebar. If either cannot be loaded the badge is simply left out; the pages themselves report errors.
+  const campaigns = useApi(backendUrl(["campaigns"]), campaignListSchema);
+  const jobs = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
+
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   async function signOut() {
     setLeaving(true);
@@ -18,40 +51,106 @@ export function Shell({ children }: { children: React.ReactNode }) {
     router.replace("/login");
   }
 
+  function search(event: FormEvent) {
+    event.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/dashboard/campaigns?q=${encodeURIComponent(q)}` : "/dashboard/campaigns");
+  }
+
+  const failed = jobs.data?.stats.dead ?? 0;
+  const groups: { title: string; items: Item[] }[] = [
+    {
+      title: "Main",
+      items: [
+        { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+        { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, badge: campaigns.data ? campaigns.data.length : undefined },
+      ],
+    },
+    {
+      title: "System",
+      items: [{ href: "/dashboard/system", label: "Background work", icon: Activity, badge: failed > 0 ? `${failed} failed` : undefined, alert: failed > 0 }],
+    },
+  ];
+
+  const sidebar = (
+    <div className="flex h-full flex-col gap-6 p-4">
+      <Link href="/dashboard" className="flex items-center gap-2.5 px-1" aria-label="DevyTalk dashboard">
+        <LogoMark />
+        <span className="leading-tight">
+          <span className="block text-[15px] font-bold tracking-tight text-ink-900">
+            devy<span className="text-brand-600">talk</span>
+          </span>
+          <span className="block text-[10px] font-semibold uppercase tracking-widest text-ink-400">Sales calls</span>
+        </span>
+      </Link>
+      <nav aria-label="Dashboard" className="flex flex-1 flex-col gap-5">
+        {groups.map((group) => (
+          <div key={group.title}>
+            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-ink-400">{group.title}</p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink key={item.href} item={item} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+      <button
+        type="button"
+        onClick={signOut}
+        disabled={leaving}
+        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-ink-600 hover:bg-white/70 hover:text-ink-900 disabled:opacity-50"
+      >
+        <LogOut className="size-4 text-ink-400" aria-hidden="true" /> Sign out
+      </button>
+    </div>
+  );
+
   return (
-    <div className="min-h-dvh bg-ink-50">
-      <header className="sticky top-0 z-40 border-b border-ink-100 bg-white">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4 sm:px-6">
-          <Link href="/dashboard" className="flex items-center gap-2" aria-label="DevyTalk dashboard">
-            <LogoMark />
-            <span className="text-lg font-bold tracking-tight text-ink-900">
-              devy<span className="text-brand-600">talk</span>
-            </span>
-          </Link>
-          <nav aria-label="Dashboard" className="flex flex-1 items-center gap-1">
-            <Link
-              href="/dashboard"
-              className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold",
-                pathname.startsWith("/dashboard") ? "bg-ink-100 text-ink-900" : "text-ink-600 hover:bg-ink-50",
-              )}
-            >
-              <LayoutGrid className="size-4" aria-hidden="true" /> Campaigns
-            </Link>
-          </nav>
-          <button
-            type="button"
-            onClick={signOut}
-            disabled={leaving}
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-600 hover:bg-ink-50 disabled:opacity-50"
-          >
-            <LogOut className="size-4" aria-hidden="true" /> Sign out
-          </button>
+    <div className="min-h-dvh bg-ink-100 text-ink-900">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 lg:block">{sidebar}</aside>
+
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-ink-900/30" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+          <aside className="relative h-full w-64 bg-ink-100 shadow-2xl">
+            <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="absolute right-3 top-4 rounded-lg p-1.5 text-ink-500 hover:bg-white">
+              <X className="size-5" />
+            </button>
+            {sidebar}
+          </aside>
         </div>
-      </header>
-      <main id="main" className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        {children}
-      </main>
+      )}
+
+      <div className="lg:pl-60">
+        <div className="min-h-dvh bg-ink-50 lg:my-3 lg:mr-3 lg:min-h-[calc(100dvh-1.5rem)] lg:rounded-3xl lg:border lg:border-white lg:shadow-sm">
+          <header className="flex items-center gap-3 px-4 pt-4 sm:px-6 lg:px-7 lg:pt-5">
+            <button type="button" onClick={() => setMenuOpen(true)} aria-label="Open menu" className="rounded-lg p-2 text-ink-600 hover:bg-white lg:hidden">
+              <Menu className="size-5" />
+            </button>
+            <form onSubmit={search} role="search" className="relative w-full max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-400" aria-hidden="true" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search campaigns"
+                placeholder="Search campaigns…"
+                className="h-10 w-full rounded-xl border border-ink-100 bg-white pl-9 pr-3 text-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
+              />
+            </form>
+            <div className="ml-auto flex items-center gap-2.5 rounded-xl bg-white px-3 py-1.5 ring-1 ring-ink-100">
+              <span className="grid size-7 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-800" aria-hidden="true">
+                O
+              </span>
+              <span className="hidden text-sm font-medium text-ink-700 sm:block">Operator</span>
+            </div>
+          </header>
+          <main id="main" className="px-4 pb-10 pt-6 sm:px-6 lg:px-7">
+            {children}
+          </main>
+        </div>
+      </div>
     </div>
   );
 }

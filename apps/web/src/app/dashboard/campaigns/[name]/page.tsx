@@ -5,7 +5,8 @@ import { AlertTriangle, PauseCircle, Trophy } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { budgetUse, count, label, languageName, money, percent } from "@/lib/api/format";
 import { reportSchema, rulesSchema, type Report, type Rules } from "@/lib/api/schemas";
-import { Card, CardTitle, EmptyState, ErrorState, Loading, Meter, Pill, Stat, TableWrap, Td, Th } from "@/components/dashboard/ui";
+import { Card, CardTitle, EmptyState, ErrorState, Loading, Meter, Pill, TableWrap, Td, Th } from "@/components/dashboard/ui";
+import { Ring, SERIES, StatTile } from "@/components/dashboard/viz";
 
 function BudgetCard({ rules }: { rules: Rules }) {
   const budget = budgetUse(rules.spend_usd, rules.rules.budget_usd);
@@ -183,12 +184,23 @@ export default function PerformancePage({ params }: { params: Promise<{ name: st
       {r.calls.total === 0 ? (
         <EmptyState title="No calls yet">Once this campaign places or receives calls, its results appear here.</EmptyState>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Stat label="Total calls" value={count(r.calls.total)} />
-          <Stat label="Answered" value={count(r.calls.answered)} hint={`${count(r.calls.reviewed)} reviewed`} />
-          <Stat label="Conversions" value={count(r.calls.conversions)} hint="Meetings booked and sales" />
-          <Stat label="Conversion rate" value={percent(r.calls.conversion_rate)} hint="Of answered calls" />
-          <Stat label="Cost per conversion" value={money(r.cost.cost_per_conversion)} hint={`${money(r.cost.spend_usd)} spent`} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5 [&>*]:min-w-0">
+          <StatTile label="Total calls" value={count(r.calls.total)} note={`${count(r.calls.reviewed)} reviewed`} />
+          <StatTile
+            label="Answered"
+            value={count(r.calls.answered)}
+            total={count(r.calls.total)}
+            ring={<Ring share={r.calls.total > 0 ? r.calls.answered / r.calls.total : null} tint={SERIES.blue} label="Share of calls answered" size={52} />}
+          />
+          <StatTile
+            label="Conversions"
+            value={count(r.calls.conversions)}
+            total={count(r.calls.answered)}
+            note="Meetings booked and sales"
+            ring={<Ring share={r.calls.conversion_rate} tint={SERIES.aqua} label="Conversion rate" size={52} />}
+          />
+          <StatTile label="Conversion rate" value={percent(r.calls.conversion_rate)} note="Of answered calls" />
+          <StatTile label="Cost per conversion" value={money(r.cost.cost_per_conversion)} note={`${money(r.cost.spend_usd)} spent`} />
         </div>
       )}
 

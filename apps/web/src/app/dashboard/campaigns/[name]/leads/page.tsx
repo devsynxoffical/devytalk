@@ -284,7 +284,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
             </select>
           </label>
           <label className="min-w-48 flex-1 text-sm">
-            <span className="mb-1 block text-xs font-medium text-ink-500">Search</span>
+            <span className="mb-1 block text-xs font-medium text-ink-500">Search leads</span>
             <input
               type="search"
               value={search}

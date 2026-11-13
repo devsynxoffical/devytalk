@@ -209,3 +209,26 @@ export const experimentSchema = z.object({
 });
 export const experimentListSchema = z.array(experimentSchema);
 export type Experiment = z.infer<typeof experimentSchema>;
+
+const jobSchema = z.object({
+  id: z.number(),
+  kind: z.string(),
+  key: z.string(),
+  status: z.enum(["queued", "running", "done", "dead"]),
+  attempts: z.number(),
+  max_attempts: z.number(),
+  run_at: z.string().nullable(),
+  last_error: z.string().nullable(),
+  call_run_id: z.number().nullable(),
+  created_at: z.string().nullable(),
+  finished_at: z.string().nullable(),
+});
+export type Job = z.infer<typeof jobSchema>;
+
+export const jobsSchema = z.object({
+  stats: z.object({ queued: z.number(), running: z.number(), done: z.number(), dead: z.number(), oldest_due_seconds: z.number() }),
+  jobs: z.array(jobSchema),
+});
+export type Jobs = z.infer<typeof jobsSchema>;
+
+export const okSchema = z.object({ ok: z.boolean() });

@@ -15,7 +15,7 @@ export function CampaignTabs({ name }: { name: string }) {
   const pathname = usePathname();
   const base = `/dashboard/campaigns/${encodeURIComponent(name)}`;
   return (
-    <nav aria-label="Campaign sections" className="mt-5 flex gap-1 overflow-x-auto border-b border-ink-200">
+    <nav aria-label="Campaign sections" className="mt-5 inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-ink-100 p-1">
       {TABS.map((tab) => {
         const href = base + tab.segment;
         const active = decodeURIComponent(pathname) === decodeURIComponent(href);
@@ -25,8 +25,8 @@ export function CampaignTabs({ name }: { name: string }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
-              active ? "border-brand-600 text-brand-700" : "border-transparent text-ink-500 hover:text-ink-900",
+              "whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors",
+              active ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-900",
             )}
           >
             {tab.label}
