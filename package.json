@@ -1,12 +1,18 @@
 {
   "name": "devytalk",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w @devytalk/web",
     "build": "npm run build -w @devytalk/web",
     "start": "npm run start -w @devytalk/web",
-    "typecheck": "npm run typecheck -w @devytalk/web"
+    "typecheck": "npm run typecheck -w @devytalk/web",
+    "test": "npm run test -w @devytalk/web",
+    "test:e2e": "npm run test:e2e -w @devytalk/web"
   },
-  "engines": { "node": ">=20.9" }
+  "engines": {
+    "node": ">=20.9"
+  }
 }

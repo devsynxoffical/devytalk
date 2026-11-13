@@ -46,6 +46,50 @@ All copy lives in `apps/web/src/content/*.ts` (features, solutions, pricing, int
 `kind: "callback"` (the hero "Get a call from Devy" form) requires `phone`; it is stored as a lead until telephony is connected in phase 3.
 It validates with the shared Zod schema (`src/lib/lead-schema.ts`), rate-limits per IP, rejects honeypot submissions and appends each lead to `LEADS_DIR/leads.ndjson`.
 
+## Dashboard (`/dashboard`)
+
+The customer dashboard for the DevyTalk calling engine (repository `aicallingagent`).
+It adds no data of its own: every number is read from the engine's API.
+
+| Screen | What it shows |
+| --- | --- |
+| Campaigns | Every campaign with status, budget use and the reason for an automatic pause |
+| Performance | Calls, answered, conversions, conversion rate, cost per conversion, budget spent and remaining, objections ranked with handled rate, lost reasons, competitors, results by playbook version and by language |
+| Leads | Score and hot/warm/cold category, buying intent, status, recommended next action; filters for all of these; a detail panel with the evidence behind each score factor, quotes, objections, lost reason and call transcripts |
+| Coach & playbook | Run the AI coach, read each recommendation with its evidence, compare a version with the live one, approve, reject or roll back |
+| A/B tests | Start a controlled test of a version against the live one, watch sample sizes per side, stop it, or make the tested version live once the evidence supports it |
+
+Rules the dashboard keeps:
+
+- **Sign-in** uses the engine's API token (`API_TOKEN`, or the `api_token` file in its
+  data folder). The server checks it against the engine and stores it in an httpOnly,
+  SameSite=Strict cookie. Page scripts never see it, and no provider key is ever sent
+  to the browser.
+- **One way to the engine**: `/api/backend/*`, a server-side proxy that adds the token,
+  reaches only the engine's `/api/*`, and refuses changes started by other sites.
+- **Every response is validated** (`src/lib/api/schemas.ts`) before a page uses it. A
+  missing value is shown as a dash or an empty state, never as zero.
+- **Nothing is published automatically.** A draft goes live only after two deliberate
+  clicks; a draft with unanswered blocking questions cannot be approved; a tested
+  version can be made live only when the engine's verdict is "variant ahead".
+- There are no personal accounts yet: everyone with the token is the same operator.
+
+Configuration: `DEVYTALK_API_URL` (default `http://localhost:8000`), server-side only.
+
+### Tests
+
+```bash
+npm test                                                   # unit tests (vitest)
+ENGINE_DIR=/path/to/aicallingagent npm run test:e2e        # browser tests against a real engine
+```
+
+The browser tests start the engine on a new, empty SQLite database filled with the
+engine's test fixtures (`tests/seed_dashboard.py`), build and start the dashboard, and
+walk the whole path in Chromium: sign in, read a campaign's performance, filter and
+inspect leads, reject, approve and roll back playbook versions, run and promote an A/B
+test, empty states and error states. They change data, so never point them at a real
+database. The fixture campaigns exist only in that temporary database.
+
 ## Run it
 
 ```bash
