@@ -1,0 +1,211 @@
+/**
+ * The shape of every response the dashboard reads from the calling engine.
+ * Responses are checked against these before a page uses them, so a change on the
+ * engine shows up as a clear error instead of a half-rendered screen.
+ */
+import { z } from "zod";
+
+const rate = z.number().nullable();
+
+export const campaignSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  status: z.string(),
+  languages: z.array(z.string()).default([]),
+  inbound_number: z.string().nullable().default(null),
+  stop_reason: z.string().nullable().default(null),
+  spend_usd: z.number().default(0),
+  budget_usd: z.number().nullable().default(null),
+  readiness_score: z.number(),
+  stats: z.record(z.string(), z.number()),
+  running: z.boolean(),
+});
+export const campaignListSchema = z.array(campaignSchema);
+export type Campaign = z.infer<typeof campaignSchema>;
+
+const groupSchema = z.object({
+  calls: z.number(),
+  answered: z.number(),
+  conversions: z.number(),
+  conversion_rate: rate,
+  average_quality: z.number().nullable(),
+  enough_data: z.boolean(),
+});
+
+export const reportSchema = z.object({
+  campaign: z.string(),
+  calls: z.object({
+    total: z.number(),
+    answered: z.number(),
+    reviewed: z.number(),
+    conversions: z.number(),
+    conversion_rate: rate,
+    dispositions: z.record(z.string(), z.number()),
+  }),
+  cost: z.object({ spend_usd: z.number(), cost_per_answered_call: z.number().nullable(), cost_per_conversion: z.number().nullable() }),
+  objections: z.array(
+    z.object({
+      category: z.string(),
+      raised: z.number(),
+      handled: z.number(),
+      handled_rate: rate,
+      calls: z.number(),
+      conversion_rate_when_raised: rate,
+      examples: z.array(z.string()),
+    }),
+  ),
+  lost_reasons: z.record(z.string(), z.number()),
+  competitors: z.record(z.string(), z.number()),
+  sentiment: z.record(z.string(), z.number()),
+  missed_opportunities: z.array(z.object({ text: z.string(), calls: z.number() })),
+  unsupported_statements: z.array(z.object({ call_run_id: z.number(), statement: z.string() })),
+  by_playbook_version: z.record(z.string(), groupSchema),
+  best_version: z.string().nullable(),
+  by_language: z.record(z.string(), groupSchema),
+  leads: z.object({ total: z.number(), hot: z.number(), warm: z.number(), cold: z.number(), unscored: z.number() }),
+});
+export type Report = z.infer<typeof reportSchema>;
+
+export const rulesSchema = z.object({
+  rules: z.object({
+    calling_days: z.array(z.string()),
+    window_start: z.string(),
+    window_end: z.string(),
+    max_attempts: z.number(),
+    retry_delay_minutes: z.number(),
+    max_calls_per_day: z.number().nullable(),
+    max_calls_per_month: z.number().nullable(),
+    budget_usd: z.number().nullable(),
+    starts_at: z.string().nullable(),
+    ends_at: z.string().nullable(),
+    stop_after_meetings: z.number().nullable(),
+    max_opt_out_rate: z.number().nullable(),
+  }),
+  spend_usd: z.number(),
+  stop_reason: z.string().nullable(),
+});
+export type Rules = z.infer<typeof rulesSchema>;
+
+const answer = z.enum(["yes", "no", "unknown"]);
+const evidenceSchema = z
+  .object({
+    fits_target_customer: answer.optional(),
+    has_need: answer.optional(),
+    decision_maker: answer.optional(),
+    timeline: z.enum(["now", "this_quarter", "later", "none", "unknown"]).optional(),
+    budget_fit: answer.optional(),
+    expressed_interest: answer.optional(),
+    quotes: z.array(z.string()).optional(),
+  })
+  .default({});
+
+const leadObjection = z.object({ category: z.string(), raised: z.number(), handled: z.number(), quotes: z.array(z.string()) });
+
+export const leadSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  company: z.string(),
+  phone: z.string(),
+  email: z.string().default(""),
+  status: z.string(),
+  priority: z.number(),
+  attempts: z.number(),
+  last_disposition: z.string().nullable(),
+  score: z.number().nullable(),
+  category: z.enum(["hot", "warm", "cold", "unscored"]),
+  evidence: evidenceSchema,
+  points: z.record(z.string(), z.number()).default({}),
+  calls: z.number(),
+  buying_intent_score: z.number().nullable(),
+  buying_intent: z.enum(["high", "medium", "low"]).nullable(),
+  next_action: z.string().nullable(),
+  sentiment: z.string().nullable(),
+  lost_reason: z.string().nullable(),
+  objections: z.array(leadObjection),
+  pain_points: z.array(z.string()),
+});
+export type Lead = z.infer<typeof leadSchema>;
+
+export const leadListSchema = z.object({ total: z.number(), limit: z.number(), offset: z.number(), leads: z.array(leadSchema) });
+
+export const leadDetailSchema = leadSchema.extend({
+  notes: z.string().default(""),
+  timezone: z.string().nullable(),
+  call_history: z.array(
+    z.object({
+      call_run_id: z.number(),
+      started_at: z.string().nullable(),
+      direction: z.string(),
+      language: z.string().nullable(),
+      duration_seconds: z.number().nullable(),
+      disposition: z.string().nullable(),
+      playbook_version: z.number().nullable(),
+      summary: z.string().nullable().optional(),
+      next_action: z.string().nullable().optional(),
+      missed_opportunities: z.array(z.string()),
+      transcript: z.array(z.object({ role: z.string(), text: z.string() })),
+    }),
+  ),
+});
+export type LeadDetail = z.infer<typeof leadDetailSchema>;
+
+const coachChange = z.object({ change: z.string(), evidence: z.string() });
+
+export const versionSchema = z.object({
+  version: z.number(),
+  status: z.enum(["draft", "active", "archived", "rejected"]),
+  source: z.string(),
+  note: z.string(),
+  changes: z.array(coachChange).default([]),
+  created_by: z.string(),
+  approved_by: z.string(),
+  created_at: z.string().nullable(),
+  activated_at: z.string().nullable(),
+  readiness_score: z.number(),
+  blocking_questions: z.array(z.string()),
+  open_questions: z.number(),
+});
+export const versionListSchema = z.array(versionSchema);
+export type Version = z.infer<typeof versionSchema>;
+
+export const versionDiffSchema = z.object({
+  version: z.number(),
+  compared_with: z.number().nullable(),
+  changes: z.array(z.object({ field: z.string(), label: z.string(), removed: z.array(z.string()), added: z.array(z.string()) })),
+});
+export type VersionDiff = z.infer<typeof versionDiffSchema>;
+
+export const coachResultSchema = z.object({ version: z.number().nullable(), changes: z.array(coachChange), reviewed_calls: z.number() });
+export type CoachResult = z.infer<typeof coachResultSchema>;
+
+const armSchema = z.object({
+  version: z.number(),
+  leads_dialed: z.number(),
+  leads_answered: z.number(),
+  conversions: z.number(),
+  conversion_rate: rate,
+  calls: z.number(),
+  average_quality: z.number().nullable(),
+  answered_needed: z.number(),
+});
+export type Arm = z.infer<typeof armSchema>;
+
+export const experimentSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  status: z.enum(["running", "stopped", "promoted"]),
+  variant_share: z.number(),
+  min_answered_per_arm: z.number(),
+  started_at: z.string().nullable(),
+  ended_at: z.string().nullable(),
+  created_by: z.string(),
+  control: armSchema,
+  variant: armSchema,
+  enough_data: z.boolean(),
+  p_value: z.number().nullable(),
+  verdict: z.enum(["collecting", "no_clear_difference", "variant_ahead", "control_ahead"]),
+  leader: z.enum(["control", "variant"]).nullable(),
+  summary: z.string(),
+});
+export const experimentListSchema = z.array(experimentSchema);
+export type Experiment = z.infer<typeof experimentSchema>;
