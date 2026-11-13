@@ -1,7 +1,12 @@
 import { ButtonLink } from "@/components/ui/Button";
+import { Footer } from "@/components/layout-footer";
+import { Header } from "@/components/layout-header";
 
 export default function NotFound() {
   return (
+    <>
+      <Header />
+      <main id="main">
     <section className="relative grid min-h-[85dvh] place-items-center overflow-hidden px-4 pt-28 text-center">
       <div className="bg-dots absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black,transparent_65%)]" aria-hidden="true" />
       <div className="relative">
@@ -16,5 +21,8 @@ export default function NotFound() {
         </div>
       </div>
     </section>
+      </main>
+      <Footer />
+    </>
   );
 }

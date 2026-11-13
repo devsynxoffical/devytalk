@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { LogoMark } from "@/components/ui/Logo";
 import { LoginForm } from "@/components/interactive/LoginForm";
 
@@ -15,8 +16,10 @@ export default function LoginPage() {
           <LogoMark className="size-11" />
         </div>
         <h1 className="mt-6 text-center text-2xl font-semibold text-ink-900">Welcome back</h1>
-        <p className="mt-1 text-center text-sm text-ink-500">Log in to your DevyTalk workspace</p>
-        <LoginForm />
+        <p className="mt-1 text-center text-sm text-ink-500">Open your DevyTalk dashboard</p>
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
         <p className="mt-6 text-center text-sm text-ink-500">
           New to DevyTalk?{" "}
           <Link href="/signup" className="font-semibold text-brand-700 hover:underline">
