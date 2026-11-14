@@ -41,14 +41,16 @@ export default function SetupPage() {
                 </p>
                 <p className="t-meta mt-0.5">{check.purpose}</p>
                 {!check.ok && (
-                  <p className="mt-1.5 text-[13px] text-fg-2">
-                    Add to the engine&apos;s environment:{" "}
-                    {check.missing.map((name) => (
-                      <code key={name} className="t-figure mr-1.5 rounded-chip bg-sunken px-1.5 py-0.5 text-[12px] text-fg">
-                        {name}
-                      </code>
-                    ))}
-                  </p>
+                  <div className="mt-1.5 text-[13px] text-fg-2">
+                    <p>Add to the engine&apos;s environment:</p>
+                    <p className="mt-1 flex flex-wrap gap-1.5">
+                      {check.missing.map((name) => (
+                        <code key={name} className="t-figure rounded-chip bg-sunken px-1.5 py-0.5 text-[12px] break-all text-fg">
+                          {name}
+                        </code>
+                      ))}
+                    </p>
+                  </div>
                 )}
               </div>
             </li>

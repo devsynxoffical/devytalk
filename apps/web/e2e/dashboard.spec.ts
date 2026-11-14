@@ -834,6 +834,12 @@ test("phones get their own navigation and layouts, with nothing scrolling sidewa
     await phone.waitForLoadState("networkidle");
     expect(await fits(), `${section} fits a phone`).toBe(true);
   }
+  for (const path of ["/dashboard/setup", "/dashboard/requests", "/dashboard/team", "/dashboard/account", "/dashboard/campaigns/new"]) {
+    await phone.goto(path);
+    await phone.waitForLoadState("networkidle");
+    expect(await fits(), `${path} fits a phone`).toBe(true);
+  }
+  await phone.goto(`/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}/settings`);
   await phone.getByRole("link", { name: "Back to Accounting firms Q4" }).click(); // the phone's way back
   await expect(phone.getByTestId("pause-reason")).toBeVisible();
   await context.close();

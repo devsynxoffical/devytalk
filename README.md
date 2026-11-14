@@ -43,8 +43,10 @@ All copy lives in `apps/web/src/content/*.ts` (features, solutions, pricing, int
 ### Lead API
 
 `POST /api/leads` accepts `{ kind: "demo" | "trial" | "contact" | "newsletter" | "callback", email, name?, company?, phone?, teamSize?, message? }`.
-`kind: "callback"` (the hero "Get a call from Devy" form) requires `phone`; it is stored as a lead until telephony is connected in phase 3.
-It validates with the shared Zod schema (`src/lib/lead-schema.ts`), rate-limits per IP, rejects honeypot submissions and appends each lead to `LEADS_DIR/leads.ndjson`.
+`kind: "callback"` (the hero "Call me" form) requires `phone`. It is a request to be called back by a person; nothing is dialed automatically.
+It validates with the shared Zod schema (`src/lib/lead-schema.ts`), rate-limits per IP and rejects honeypot submissions.
+
+Where a submission goes: with `DEVYTALK_INTAKE_TOKEN` set (the same value as `INTAKE_TOKEN` on the calling engine) it is handed to the engine and appears under **Requests** in the console. If the engine cannot take it, or no token is set, it is appended to `LEADS_DIR/leads.ndjson` on the web server and the log says so, so a visitor's request is never dropped.
 
 ## Dashboard (`/dashboard`)
 
@@ -61,7 +63,13 @@ It adds no data of its own: every number is read from the engine's API.
 | Calls | The call log, updating while calls are in progress; for each call the summary, follow-up, assessment, objections, what the agent did and the transcript; a form to call one number |
 | Coach & playbook | Run the AI coach, read each recommendation with its evidence, compare a version with the live one, approve, reject or roll back |
 | A/B tests | Start a controlled test, compare the two versions side by side with sample sizes, stop it, or make the tested version live once the evidence supports it |
-| Settings | Calling days and hours, attempts, daily and monthly limits, budget and stop conditions; export of results as CSV |
+| Knowledge | Upload documents or add a website, watch them being read, remove them, test what the agent would find for a prospect's question, build a draft playbook from them |
+| Settings | Languages the agent opens in and switches to; the inbound number the campaign answers; calling days and hours, attempts, daily and monthly limits, budget and stop conditions; export of results as CSV |
+| New campaign | A short form that creates a campaign with a working playbook, without the command line or the AI model |
+| Requests | What visitors sent through the website's forms; mark as handled |
+| Setup | Which providers are connected and which engine settings are missing (names only), the outbound number, the address to give the phone provider for inbound calls |
+| Team | Admins add people, change roles, reset passwords, deactivate and reactivate |
+| Your account | Who you are signed in as; change your password |
 | Background work | Reviews, booking notifications and training runs: waiting, running, gave up, with the reason and a way to run one again |
 
 Design: `docs/UI_REDESIGN.md` describes the visual language ("Ledger"), the tokens,
@@ -71,10 +79,14 @@ bottom sheets instead of a squeezed desktop.
 
 Rules the dashboard keeps:
 
-- **Sign-in** uses the engine's API token (`API_TOKEN`, or the `api_token` file in its
-  data folder). The server checks it against the engine and stores it in an httpOnly,
-  SameSite=Strict cookie. Page scripts never see it, and no provider key is ever sent
-  to the browser.
+- **Sign-in** is with a personal account (email and password) or, for first setup, the
+  engine's API token. Either is checked by the engine; what the browser keeps is the
+  engine's session in an httpOnly, SameSite=Strict cookie. Page scripts never see it,
+  signing in cannot be done through the proxy, and no provider key is ever sent to the
+  browser.
+- **Roles**: viewers read; operators also run campaigns; admins also decide what goes
+  live, set rules and manage people. The engine enforces this on every request. The
+  console only avoids offering what would be refused.
 - **One way to the engine**: `/api/backend/*`, a server-side proxy that adds the token,
   reaches only the engine's `/api/*`, and refuses changes started by other sites.
 - **Every response is validated** (`src/lib/api/schemas.ts`) before a page uses it. A
@@ -82,9 +94,12 @@ Rules the dashboard keeps:
 - **Nothing is published automatically.** A draft goes live only after two deliberate
   clicks; a draft with unanswered blocking questions cannot be approved; a tested
   version can be made live only when the engine's verdict is "variant ahead".
-- There are no personal accounts yet: everyone with the token is the same operator.
+- **Light and dark themes**, chosen in the account menu and kept in the browser.
+- **A call in progress** is followed in the Calls section: the transcript fills in as
+  people speak.
 
-Configuration: `DEVYTALK_API_URL` (default `http://localhost:8000`), server-side only.
+Configuration, all server-side only: `DEVYTALK_API_URL` (default `http://localhost:8000`);
+`DEVYTALK_INTAKE_TOKEN` (website forms to the engine, see Lead API).
 
 ### Tests
 
@@ -97,7 +112,12 @@ The browser tests start the engine on a new, empty SQLite database filled with t
 engine's test fixtures (`tests/seed_dashboard.py`), build and start the dashboard, and
 walk the whole path in Chromium: sign in, read a campaign's performance, filter and
 inspect leads, reject, approve and roll back playbook versions, run and promote an A/B
-test, empty states and error states. They change data, so never point them at a real
+test, upload and search documents, import leads, sign in with personal accounts and
+check each role, manage the team, send the website's forms and find them under
+Requests, create a campaign and set its languages and inbound number, switch themes,
+empty states and error states. Two things are simulated and marked as such in the
+tests, because no phone provider is configured there: the engine's answers for a call
+in progress, and the phone provider's request for an inbound call. They change data, so never point them at a real
 database. The fixture campaigns exist only in that temporary database.
 
 ## Run it

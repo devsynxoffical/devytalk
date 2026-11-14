@@ -151,21 +151,37 @@ Short and functional: content rises 6px on navigation (220ms), menus pop (140ms)
 drawers slide, sheets rise, the chart line draws once, live states pulse. All of it is
 disabled by `prefers-reduced-motion`.
 
-## 9. New screens on existing engine functions
+## 9. Screens added after the redesign
 
 | Screen | Engine endpoints |
 | --- | --- |
-| Calls | `GET /api/campaigns/{name}/calls`, `GET /api/calls/{id}`, `POST /api/campaigns/{name}/dial` |
+| Calls | `GET /api/campaigns/{name}/calls` (with `direction`), `GET /api/calls/{id}` (refreshed while `live`), `POST /api/campaigns/{name}/dial` |
 | Start / Pause dialing | `POST /api/campaigns/{name}/start`, `/pause` |
-| Settings | `GET` and `PUT /api/campaigns/{name}/rules`, `GET …/export.csv` |
+| Knowledge | `GET`/`POST`/`DELETE …/documents`, `POST …/sources`, `GET …/knowledge/search`, `GET`/`POST …/train` |
+| Leads import | `POST /api/campaigns/{name}/leads` |
+| Settings | `GET`/`PUT …/rules`, `GET`/`PUT …/languages`, `POST …/inbound`, `GET …/export.csv` |
+| New campaign | `POST /api/campaign-briefs` |
+| Setup | `GET /api/status` |
+| Requests | `GET /api/requests`, `POST /api/requests/{id}/handled` |
+| Team, Your account | `GET`/`POST /api/users`, `PATCH /api/users/{id}`, `GET /api/auth/me`, `POST /api/auth/password` |
 
-Each action that places calls asks for confirmation and shows the engine's own answer.
+Each action that places calls or changes what goes live asks for confirmation and
+shows the engine's own answer. Controls a role may not use are not offered.
 
-## 10. Not done
+## 10. Themes
 
-- No dark theme.
+Light is the default; Dark and System are chosen in the account menu and kept in the
+browser (`dt_theme`). The choice is applied to `<html data-theme>` by a small script
+before the first paint. Dark is the same palette turned over: deep navy surfaces
+(`#06122B`, `#0A1C40`), white type, bright blue actions, soft blue links, warm orange
+warnings. Chart colours, row hover and overlays are variables on `.app`, so both themes
+share one definition. `src/lib/theme.test.ts` reads both themes from the stylesheet
+and checks text and marker contrast.
+
+## 11. Not done
+
 - Red is the one colour outside the palette. It is kept for errors and destructive actions, where orange would be confused with a warning.
-- Document upload, training and knowledge search still have no screen.
-- No user accounts or roles, so there is no team or permission screen to design.
-- The call workspace shows finished and in-progress calls from the log; it does not
-  stream a live transcript, because the engine does not expose one.
+- The marketing website has no dark theme.
+- A call in progress is followed by refreshing every two seconds, not by a pushed stream.
+- There is no editor for the full playbook: it is created from the short form, improved
+  through drafts (documents, coach) and approved or rejected as a whole.
