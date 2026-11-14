@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, LayoutGrid, LogOut, Megaphone, PlugZap, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Activity, Bell, Building, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, KeySquare, LayoutGrid, LogOut, Megaphone, PlugZap, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { campaignListSchema, jobsSchema, websiteRequestListSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
@@ -71,6 +71,7 @@ function CommandPalette({ campaigns, onClose }: { campaigns: Campaign[]; onClose
       { id: "requests", label: "Requests", hint: "Go to", href: "/dashboard/requests" },
       { id: "system", label: "Background work", hint: "Go to", href: "/dashboard/system" },
       { id: "setup", label: "Setup", hint: "Go to", href: "/dashboard/setup" },
+      { id: "organization", label: "Organization", hint: "Go to", href: "/dashboard/organization" },
       ...campaigns.flatMap((c) => SECTIONS.map(([path, text]) => ({ id: `${c.id}${path}`, label: path ? `${c.name} › ${text}` : c.name, hint: path ? "Section" : "Campaign", href: campaignHref(c.name, path) }))),
     ];
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -174,6 +175,8 @@ function Crumbs({ pathname }: { pathname: string }) {
   else if (parts[0] === "setup") crumbs.push({ label: "Setup", href: "/dashboard/setup" });
   else if (parts[0] === "organizations") crumbs.push({ label: "Organizations", href: "/dashboard/organizations" });
   else if (parts[0] === "team") crumbs.push({ label: "Team", href: "/dashboard/team" });
+  else if (parts[0] === "organization") crumbs.push({ label: "Organization", href: "/dashboard/organization" });
+  else if (parts[0] === "keys") crumbs.push({ label: "API keys", href: "/dashboard/keys" });
   else if (parts[0] === "account") crumbs.push({ label: "Your account", href: "/dashboard/account" });
   else crumbs.push({ label: "Overview", href: "/dashboard" });
   const parent = crumbs.length > 1 ? crumbs[crumbs.length - 2] : null;
@@ -240,9 +243,17 @@ function AccountLinks({ me, isAdmin, className }: { me: Me | null; isAdmin: bool
       <Link href="/dashboard/setup" className={className}>
         <PlugZap className="size-4" aria-hidden="true" /> Setup
       </Link>
+      <Link href="/dashboard/organization" className={className}>
+        <Building className="size-4" aria-hidden="true" /> Organization
+      </Link>
       {isAdmin && (
         <Link href="/dashboard/team" className={className}>
           <UsersRound className="size-4" aria-hidden="true" /> Team
+        </Link>
+      )}
+      {isAdmin && (
+        <Link href="/dashboard/keys" className={className}>
+          <KeySquare className="size-4" aria-hidden="true" /> API keys
         </Link>
       )}
       {me?.platform && (

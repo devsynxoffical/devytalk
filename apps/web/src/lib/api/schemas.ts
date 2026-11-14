@@ -362,7 +362,7 @@ export const roleSchema = z.enum(["viewer", "operator", "admin"]);
 export type Role = z.infer<typeof roleSchema>;
 
 export const meSchema = z.object({
-  kind: z.enum(["token", "user"]),
+  kind: z.enum(["token", "user", "key"]),
   id: z.number().nullable(),
   email: z.string(),
   name: z.string(),
@@ -374,7 +374,7 @@ export const meSchema = z.object({
 });
 export type Me = z.infer<typeof meSchema>;
 
-export const organizationSchema = z.object({ id: z.number(), name: z.string(), created_at: z.string().nullable(), users: z.number(), active_users: z.number() });
+export const organizationSchema = z.object({ id: z.number(), name: z.string(), created_at: z.string().nullable(), users: z.number(), active_users: z.number(), from_numbers: z.array(z.string()).default([]) });
 export const organizationListSchema = z.array(organizationSchema);
 export type Organization = z.infer<typeof organizationSchema>;
 
@@ -432,3 +432,31 @@ export const languagesSchema = z.object({
   can_localize: z.boolean(),
 });
 export type CampaignLanguages = z.infer<typeof languagesSchema>;
+
+/** What is one organization's own. The booking webhook's secret is never sent to the console. */
+export const organizationSettingsSchema = z.object({
+  from_numbers: z.array(z.string()).default([]),
+  human_transfer_number: z.string().nullable().default(null),
+  booking_webhook_url: z.string().nullable().default(null),
+  booking_webhook_signed: z.boolean().default(false),
+  cost_per_connected_minute_usd: z.number().default(0),
+  cost_per_call_attempt_usd: z.number().default(0),
+  can_place_calls: z.boolean().default(false),
+});
+export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
+
+export const apiKeySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  role: roleSchema,
+  starts_with: z.string(),
+  created_by: z.string().default(""),
+  created_at: z.string().nullable(),
+  last_used_at: z.string().nullable(),
+  revoked_at: z.string().nullable(),
+});
+export const apiKeyListSchema = z.array(apiKeySchema);
+/** Only the answer to creating a key holds the key itself. */
+export const newApiKeySchema = apiKeySchema.extend({ key: z.string() });
+export type ApiKey = z.infer<typeof apiKeySchema>;
+

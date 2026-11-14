@@ -837,6 +837,69 @@ test("a second organization is separate from the first, down to the same campaig
   await bolt.context.close();
 });
 
+test("an organization calls from its own numbers, sets its own transfers and bookings, and makes keys for its systems", async ({ browser, request }) => {
+  // Bolt Logistics was created in the test above. It has borrowed nothing from the first organization.
+  const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
+  await bolt.tab.goto("/dashboard/organization");
+  await expect(bolt.tab.getByTestId("no-number")).toContainText("No phone number to call from yet");
+  await expect(bolt.tab.getByText("None assigned")).toBeVisible();
+
+  // The operator assigns it numbers; an organization cannot type a caller number of its own choosing.
+  await page.goto("/dashboard/organizations");
+  await expect(page.getByTestId("organizations").locator("tr", { hasText: "Bolt Logistics" })).toContainText("No number");
+  await page.getByRole("button", { name: "Assign numbers to Bolt Logistics" }).click();
+  await page.getByLabel("Caller numbers").fill("+1 (415) 555-0210\n+14155550211");
+  await page.getByRole("button", { name: "Assign numbers", exact: true }).click();
+  await expect(toast("Bolt Logistics now calls from those 2 numbers.")).toBeVisible();
+  await expect(page.getByTestId("organizations").locator("tr", { hasText: "Bolt Logistics" })).toContainText("+14155550210, +14155550211");
+  expect((await fromPage(bolt.tab, "PUT", "/api/backend/organizations/2/telephony", { from_numbers: ["+14155550999"] })).status).toBe(403);
+
+  await bolt.tab.reload();
+  await expect(bolt.tab.getByTestId("no-number")).toHaveCount(0);
+  await expect(bolt.tab.getByTestId("from-numbers")).toHaveText("+14155550210+14155550211");
+
+  // Its admin sets where calls are transferred and where bookings are reported. The secret is never shown again.
+  await bolt.tab.getByLabel("Transfer calls to").fill("+14155550299");
+  await bolt.tab.getByLabel("Report bookings to").fill("http://bolt.example/plain");
+  await bolt.tab.getByRole("button", { name: "Save" }).click();
+  await expect(bolt.tab.getByRole("alert").filter({ hasText: "https://" })).toBeVisible();
+  await bolt.tab.getByLabel("Report bookings to").fill("https://bolt.example/hooks/bookings");
+  await bolt.tab.getByLabel("Signing secret").fill("bolt-signing-secret");
+  await bolt.tab.getByRole("button", { name: "Save" }).click();
+  await expect(bolt.tab.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  await expect(bolt.tab.getByLabel("Signing secret")).toHaveValue("");
+  await expect(bolt.tab.getByText("A secret is set and is never shown.")).toBeVisible();
+  expect(JSON.stringify((await fromPage(bolt.tab, "GET", "/api/backend/organization/settings")).body)).not.toContain("bolt-signing-secret");
+
+  // A key for one of its systems: shown once, then only its first characters.
+  await bolt.tab.getByRole("button", { name: "Account" }).click();
+  await bolt.tab.getByRole("link", { name: "API keys" }).click();
+  await expect(bolt.tab.getByText("No API keys yet")).toBeVisible();
+  await bolt.tab.getByRole("button", { name: "New key" }).click();
+  await bolt.tab.getByLabel("What will use it").fill("CRM sync");
+  await bolt.tab.getByRole("button", { name: "Create key" }).click();
+  const key = (await bolt.tab.getByTestId("new-key").getByTestId("copy-value").textContent()) ?? "";
+  expect(key).toMatch(/^dtk_/);
+  await bolt.tab.getByRole("button", { name: "I have copied it" }).click();
+  await expect(bolt.tab.getByTestId("api-keys")).toContainText("CRM sync");
+  await expect(bolt.tab.getByTestId("api-keys")).not.toContainText(key);
+
+  // The key works against the engine, inside Bolt only, and only to look.
+  const asKey = { Authorization: `Bearer ${key}` };
+  const campaigns = await request.get(`${ENGINE}/api/campaigns`, { headers: asKey });
+  expect(campaigns.status()).toBe(200);
+  expect(JSON.stringify(await campaigns.json())).not.toMatch(/Dental|Law firms/);
+  expect((await request.put(`${ENGINE}/api/campaigns/${encodeURIComponent(ACCOUNTING)}/rules`, { headers: asKey, data: {} })).status()).toBe(403);
+
+  // Revoked, it is refused at once.
+  await bolt.tab.getByTestId("api-keys").getByRole("button", { name: "Revoke" }).click();
+  await bolt.tab.getByRole("button", { name: "Revoke key" }).click();
+  await expect(bolt.tab.getByRole("status").filter({ hasText: "CRM sync was revoked." })).toBeVisible();
+  await expect(bolt.tab.getByTestId("api-keys")).toContainText("Revoked");
+  expect((await request.get(`${ENGINE}/api/campaigns`, { headers: asKey })).status()).toBe(401);
+  await bolt.context.close();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");

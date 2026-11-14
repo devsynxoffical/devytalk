@@ -94,6 +94,10 @@ Rules the dashboard keeps:
 - **Nothing is published automatically.** A draft goes live only after two deliberate
   clicks; a draft with unanswered blocking questions cannot be approved; a tested
   version can be made live only when the engine's verdict is "variant ahead".
+- **Organization**: the numbers its calls go out from (assigned by the operator on the
+  Organizations screen), where calls are transferred and where bookings are reported.
+  The webhook's signing secret can be set and replaced, never read back.
+- **API keys** for an organization's own systems: a name, a role, shown once, revocable.
 - **Light and dark themes**, chosen in the account menu and kept in the browser.
 - **A call in progress** is followed in the Calls section: the transcript fills in as
   people speak.
