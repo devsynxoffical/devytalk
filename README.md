@@ -98,6 +98,9 @@ Rules the dashboard keeps:
   Organizations screen), where calls are transferred and where bookings are reported.
   The webhook's signing secret can be set and replaced, never read back.
 - **API keys** for an organization's own systems: a name, a role, shown once, revocable.
+- **Usage**: what the organization used, month by month, from the engine's ledger:
+  calls, AI and corrections, by campaign, with every line as CSV. A month that is
+  over does not change. It is a statement of usage, not a tax invoice, and says so.
 - **Invitations**: on the Team screen an admin makes a one-time link for a person
   and passes it on; at `/invite/…` the person chooses their own password and is
   signed in. The same kind of link resets a forgotten password and signs the account

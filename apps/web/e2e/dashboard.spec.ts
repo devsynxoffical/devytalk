@@ -1131,6 +1131,37 @@ test("a person joins by a link and chooses their own password; a reset link gets
   await bolt.context.close();
 });
 
+test("usage is read month by month, adds up to its lines, and belongs to one organization", async ({ browser, request }) => {
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Account" }).click();
+  await page.getByRole("link", { name: "Usage" }).click();
+  await expect(page.getByRole("heading", { name: "Usage", level: 1 })).toBeVisible();
+  const statement = page.getByTestId("statement");
+  await expect(statement).toContainText("Still open"); // this month is not over
+  await expect(statement).toContainText("not a tax invoice");
+
+  // The total on screen is the sum of the month's lines, as the engine wrote them.
+  const months = (await fromPage(page, "GET", "/api/backend/usage/statements")).body as unknown as { period: string; total_usd: string; lines: number }[];
+  expect(months.length).toBeGreaterThan(0);
+  const { period, total_usd } = months[0];
+  const sheet = await page.evaluate(async (p) => (await fetch(`/api/backend/usage/statements/${p}?format=csv`)).text(), period);
+  const [header, ...rows] = sheet.trim().split(/\r?\n/);
+  expect(header).toBe("line,written_at,kind,campaign,call,quantity,unit,amount_usd,basis,corrects_line,note");
+  expect(rows.length).toBe(months[0].lines);
+  const shown = (await page.getByTestId("statement-total").textContent()) ?? "";
+  expect(Number(shown.replace(/[$,]/g, ""))).toBeCloseTo(Number(total_usd), 2);
+  await expect(page.getByTestId("statement-campaigns")).toContainText(DENTAL);
+  await expect(page.getByRole("link", { name: "Every line (CSV)" })).toHaveAttribute("href", `/api/backend/usage/statements/${period}?format=csv`);
+
+  // Bolt placed no calls: it has no statement, and sees nothing of the first organization's.
+  const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
+  await bolt.tab.goto("/dashboard/usage");
+  await expect(bolt.tab.getByText("No usage yet")).toBeVisible();
+  const theirs = await bolt.tab.evaluate(async (p) => (await fetch(`/api/backend/usage/statements/${p}?format=csv`)).text(), period);
+  expect(theirs.trim()).toBe(header);
+  await bolt.context.close();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");

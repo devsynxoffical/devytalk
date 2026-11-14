@@ -528,3 +528,19 @@ export const invitationListSchema = z.array(invitationSchema);
 /** The answer to making a link: the only time its token is sent. */
 export const newInvitationSchema = invitationSchema.extend({ token: z.string() });
 
+/** Amounts from the ledger are exact decimals, sent as text. */
+export const statementListSchema = z.array(z.object({ period: z.string(), lines: z.number(), total_usd: z.string(), status: z.enum(["open", "closed"]) }));
+export const statementSchema = z.object({
+  number: z.string(),
+  organization: z.object({ id: z.number(), name: z.string().default("") }),
+  status: z.enum(["open", "closed"]),
+  total_usd: z.string(),
+  calls: z.object({ count: z.number(), minutes: z.string(), amount_usd: z.string() }),
+  ai: z.object({ requests: z.number(), tokens: z.number(), amount_usd: z.string() }),
+  corrections: z.object({ lines: z.number(), amount_usd: z.string() }),
+  by_basis: z.array(z.object({ basis: z.string(), lines: z.number(), amount_usd: z.string() })).default([]),
+  by_campaign: z.array(z.object({ campaign_id: z.number().nullable(), campaign: z.string().default(""), calls: z.number(), minutes: z.string(), amount_usd: z.string() })).default([]),
+  what_this_is: z.string().default(""),
+});
+export type Statement = z.infer<typeof statementSchema>;
+

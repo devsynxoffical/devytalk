@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, Building, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, KeySquare, LayoutGrid, LogOut, Megaphone, PhoneOff, PlugZap, Search, UserRound, UsersRound, Webhook, type LucideIcon } from "lucide-react";
+import { Activity, Bell, Building, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, KeySquare, LayoutGrid, LogOut, Megaphone, PhoneOff, PlugZap, Receipt, Search, UserRound, UsersRound, Webhook, type LucideIcon } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { campaignListSchema, jobsSchema, websiteRequestListSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
@@ -73,6 +73,7 @@ function CommandPalette({ campaigns, onClose }: { campaigns: Campaign[]; onClose
       { id: "setup", label: "Setup", hint: "Go to", href: "/dashboard/setup" },
       { id: "organization", label: "Organization", hint: "Go to", href: "/dashboard/organization" },
       { id: "do-not-call", label: "Do not call", hint: "Go to", href: "/dashboard/do-not-call" },
+      { id: "usage", label: "Usage", hint: "Go to", href: "/dashboard/usage" },
       ...campaigns.flatMap((c) => SECTIONS.map(([path, text]) => ({ id: `${c.id}${path}`, label: path ? `${c.name} › ${text}` : c.name, hint: path ? "Section" : "Campaign", href: campaignHref(c.name, path) }))),
     ];
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -179,6 +180,7 @@ function Crumbs({ pathname }: { pathname: string }) {
   else if (parts[0] === "organization") crumbs.push({ label: "Organization", href: "/dashboard/organization" });
   else if (parts[0] === "keys") crumbs.push({ label: "API keys", href: "/dashboard/keys" });
   else if (parts[0] === "webhooks") crumbs.push({ label: "Webhooks", href: "/dashboard/webhooks" });
+  else if (parts[0] === "usage") crumbs.push({ label: "Usage", href: "/dashboard/usage" });
   else if (parts[0] === "do-not-call") crumbs.push({ label: "Do not call", href: "/dashboard/do-not-call" });
   else if (parts[0] === "account") crumbs.push({ label: "Your account", href: "/dashboard/account" });
   else crumbs.push({ label: "Overview", href: "/dashboard" });
@@ -245,6 +247,9 @@ function AccountLinks({ me, isAdmin, className }: { me: Me | null; isAdmin: bool
     <>
       <Link href="/dashboard/setup" className={className}>
         <PlugZap className="size-4" aria-hidden="true" /> Setup
+      </Link>
+      <Link href="/dashboard/usage" className={className}>
+        <Receipt className="size-4" aria-hidden="true" /> Usage
       </Link>
       <Link href="/dashboard/do-not-call" className={className}>
         <PhoneOff className="size-4" aria-hidden="true" /> Do not call
