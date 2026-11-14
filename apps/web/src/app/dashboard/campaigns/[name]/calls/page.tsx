@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState, type FormEvent } from "react";
+import { use, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowDownLeft, ArrowUpRight, ExternalLink, PhoneOutgoing, Voicemail } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { DASH, count, dateTime, duration, label, languageName, money } from "@/lib/api/format";
@@ -40,8 +40,19 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
   const summary = review?.summary ?? detail.summary.agent_outcome?.summary;
   const nextAction = review?.next_action ?? detail.summary.agent_outcome?.next_step;
   const actions = detail.tool_events.filter((e) => e.tool !== "log_call_outcome" && e.tool !== "end_call");
+  // While the call is going, keep the newest line in view.
+  const newest = useRef<HTMLLIElement>(null);
+  const lines = detail.transcript.length;
+  useEffect(() => {
+    if (detail.live && lines > 0) newest.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [detail.live, lines]);
   return (
     <div className="space-y-6">
+      {detail.live && (
+        <Banner tone="info" title="This call is in progress" role="status" testId="live-call">
+          The transcript below fills in as people speak. The summary and assessment are written when the call ends.
+        </Banner>
+      )}
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
         {[
           ["Started", dateTime(row.started_at), false],
@@ -160,13 +171,13 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
       <section>
         <Heading>Transcript</Heading>
         {detail.transcript.length === 0 ? (
-          <p className="text-[13px] text-fg-2">Nobody spoke on this call.</p>
+          <p className="text-[13px] text-fg-2">{detail.live ? "Nobody has spoken yet." : "Nobody spoke on this call."}</p>
         ) : (
-          <ol className="space-y-2.5" data-testid="transcript">
+          <ol className="space-y-2.5" data-testid="transcript" role={detail.live ? "log" : undefined} aria-label={detail.live ? "Live transcript" : undefined}>
             {detail.transcript.map((line, i) => {
               const prospect = line.role === "user";
               return (
-                <li key={i} className={cn("flex", prospect ? "justify-end pl-8" : "pr-8")}>
+                <li key={i} ref={i === lines - 1 ? newest : undefined} className={cn("flex", prospect ? "justify-end pl-8" : "pr-8")}>
                   <div dir="auto" className={cn("max-w-full rounded-panel px-3 py-2 text-[13.5px] leading-relaxed", prospect ? "bg-signal text-on-signal" : "bg-sunken text-fg")}>
                     <span className={cn("mb-0.5 block text-[10.5px] font-semibold uppercase tracking-[0.07em]", prospect ? "text-on-signal/75" : "text-fg-3")}>{prospect ? "Prospect" : "Agent"}</span>
                     {line.text}
@@ -187,8 +198,22 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
   );
 }
 
-function DetailLoader({ row }: { row: CallRow }) {
+function DetailLoader({ row, onEnded }: { row: CallRow; onEnded: () => void }) {
   const { data, error, loading, reload } = useApi(backendUrl(["calls", row.call_run_id]), callDetailSchema);
+  // A call in progress is followed as it happens; when it ends, the call log is refreshed once.
+  const live = data?.live ?? false;
+  const wasLive = useRef(false);
+  useEffect(() => {
+    if (live) {
+      wasLive.current = true;
+      const timer = setInterval(reload, 2000);
+      return () => clearInterval(timer);
+    }
+    if (wasLive.current && data) {
+      wasLive.current = false;
+      onEnded();
+    }
+  }, [live, data, reload, onEnded]);
   if (loading && !data)
     return (
       <div className="space-y-3" role="status">
@@ -357,7 +382,7 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
                   </>
                 }
               >
-                <DetailLoader row={current} />
+                <DetailLoader row={current} onEnded={reload} />
               </Panel>
             ) : (
               <EmptyState title="Select a call">Its transcript, summary and follow-up appear here.</EmptyState>
@@ -367,7 +392,7 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
 
       {!wide && selected !== null && current && (
         <Drawer label="Call details" title={current.lead || current.phone} subtitle={`${current.phone} · ${callState(current).text}`} onClose={closeDetail}>
-          <DetailLoader row={current} />
+          <DetailLoader row={current} onEnded={reload} />
         </Drawer>
       )}
     </div>

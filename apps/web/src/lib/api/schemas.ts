@@ -282,6 +282,8 @@ const reviewSchema = z
 export const callDetailSchema = z.object({
   call_run_id: z.number(),
   status: z.string(),
+  /** The call is ringing or in progress: the transcript is what has been said so far. */
+  live: z.boolean().default(false),
   mode: z.string(),
   direction: z.string(),
   language: z.string().nullable(),

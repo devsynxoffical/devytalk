@@ -500,6 +500,52 @@ test("leads are imported from a sheet, with duplicates and bad numbers reported"
   await expect(alertWith("Choose a CSV or Excel file.")).toBeVisible();
 });
 
+test("a call in progress is followed line by line (the engine's answers are simulated)", async () => {
+  // No phone provider is configured in tests, so the engine cannot have a real call in
+  // progress. This checks the console's side only: the engine's answers for one extra,
+  // made-up call are supplied here. The engine's side is covered by its own tests.
+  const said = [
+    { role: "assistant", text: "Hi, this is Jordan, an AI assistant from BrightBooks." },
+    { role: "user", text: "Who gave you this number?" },
+    { role: "assistant", text: "Your firm is listed in the public accountants register." },
+  ];
+  let heard = 1;
+  let live = true;
+  const row = () => ({
+    call_run_id: 990001, lead: "Live Prospect", phone: "+14155550199", status: live ? "in-progress" : "completed", mode: "live", direction: "outbound", language: "en",
+    answered_by: "human", disposition: live ? null : "not_interested", duration_seconds: live ? null : 42, cost_usd: 0, playbook_version: 2, summary: null, started_at: new Date().toISOString(),
+  });
+  await page.route("**/api/backend/campaigns/*/calls?*", async (route) => {
+    const real = await route.fetch();
+    await route.fulfill({ response: real, json: [row(), ...((await real.json()) as unknown[])] });
+  });
+  await page.route("**/api/backend/calls/990001", (route) =>
+    route.fulfill({
+      json: { call_run_id: 990001, status: row().status, live, mode: "live", direction: "outbound", language: "en", answered_by: "human", disposition: row().disposition, duration_seconds: row().duration_seconds, transcript: said.slice(0, heard), tool_events: [], summary: {}, recording_url: null, error: null },
+    }),
+  );
+
+  await openCampaign(ACCOUNTING, "Calls");
+  await page.getByRole("button", { name: /Live Prospect/ }).first().click();
+  await expect(page.getByTestId("live-call")).toContainText("This call is in progress");
+  const transcript = page.getByRole("log", { name: "Live transcript" });
+  await expect(transcript.locator("li")).toHaveCount(1);
+
+  heard = 2; // the prospect answers: it appears without anyone reloading the page
+  await expect(transcript.locator("li")).toHaveCount(2);
+  await expect(transcript).toContainText("Who gave you this number?");
+  heard = 3;
+  await expect(transcript.locator("li")).toHaveCount(3);
+
+  live = false; // the call ends
+  await expect(page.getByTestId("live-call")).toHaveCount(0);
+  await expect(page.getByTestId("transcript").locator("li")).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /Live Prospect/ }).first()).toContainText("Not interested");
+
+  await page.unroute("**/api/backend/campaigns/*/calls?*");
+  await page.unroute("**/api/backend/calls/990001");
+});
+
 test("people sign in with their own account, and an admin manages the team", async ({ browser, request }) => {
   const context = await browser.newContext();
   const tab = await context.newPage();
