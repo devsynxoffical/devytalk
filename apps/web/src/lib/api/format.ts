@@ -40,6 +40,14 @@ export function duration(seconds: number | null | undefined): string {
   return `${m}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+/** A file size as people read it: 840 B, 12 KB, 3.4 MB. */
+export function fileSize(bytes: number | null | undefined): string {
+  if (bytes === null || bytes === undefined) return DASH;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /** Budget use for a progress bar: spent, remaining and the share used (capped at 100%). */
 export function budgetUse(spend: number, budget: number | null): { remaining: number; share: number } | null {
   if (budget === null || budget <= 0) return null;

@@ -13,6 +13,7 @@ const SECTIONS: [string, string][] = [
   ["", "Performance"],
   ["/leads", "Leads"],
   ["/calls", "Calls"],
+  ["/knowledge", "Knowledge"],
   ["/playbook", "Coach & playbook"],
   ["/experiments", "A/B tests"],
   ["/settings", "Settings"],

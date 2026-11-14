@@ -1,10 +1,10 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
-import { Check, Minus, Search, X } from "lucide-react";
-import { backendUrl, useApi } from "@/lib/api/client";
+import { use, useCallback, useEffect, useRef, useState } from "react";
+import { Check, Minus, Search, Upload, X } from "lucide-react";
+import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { DASH, FACTOR_LABELS, count, dateTime, duration, label, languageName } from "@/lib/api/format";
-import { leadDetailSchema, leadListSchema, type Lead, type LeadDetail } from "@/lib/api/schemas";
+import { leadDetailSchema, leadImportSchema, leadListSchema, type Lead, type LeadDetail, type LeadImport } from "@/lib/api/schemas";
 import { Banner, Button, DataTable, Drawer, EmptyState, ErrorState, Field, Input, KeyValues, Loading, Segmented, Select, Skeleton, Status, Tag, type Column, type Tone } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
 
@@ -13,6 +13,78 @@ const CATEGORY_TONE: Record<Lead["category"], Tone> = { hot: "crit", warm: "warn
 const INTENT_TONE: Record<string, Tone> = { high: "pos", medium: "warn", low: "neutral" };
 const STATUSES = ["pending", "calling", "callback", "completed", "failed", "dnc"];
 const statusText = (status: string) => (status === "dnc" ? "Do not call" : label(status));
+
+const SHEETS = [".csv", ".xlsx", ".xls"];
+
+/** What an import did, in the engine's own counts. */
+export function importSummary(report: LeadImport): string {
+  const skipped = [
+    report.duplicates ? `${count(report.duplicates)} already in this campaign` : "",
+    report.invalid_phone ? `${count(report.invalid_phone)} without a usable phone number` : "",
+    report.dnc ? `${count(report.dnc)} on the do-not-call list` : "",
+  ].filter(Boolean);
+  return `${count(report.imported)} ${report.imported === 1 ? "lead" : "leads"} added.${skipped.length ? ` Skipped: ${skipped.join(", ")}.` : ""}`;
+}
+
+/** Add leads from a spreadsheet. The engine matches the columns, checks numbers and skips duplicates and do-not-call numbers. */
+function ImportLeads({ campaign, onImported }: { campaign: string; onImported: () => void }) {
+  const picker = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<LeadImport | null>(null);
+
+  async function send(file: File | undefined) {
+    if (!file) return;
+    setReport(null);
+    const dot = file.name.lastIndexOf(".");
+    if (!SHEETS.includes(dot < 0 ? "" : file.name.slice(dot).toLowerCase())) return setError("Choose a CSV or Excel file.");
+    if (file.size > 25 * 1024 * 1024) return setError("The file is larger than 25 MB.");
+    setBusy(true);
+    setError(null);
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      setReport(await apiRequest(backendUrl(["campaigns", campaign, "leads"]), leadImportSchema, { form }));
+      onImported();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "The file could not be imported. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="t-meta max-w-xl">Import a CSV or Excel sheet with a phone column. Names, companies and time zones are picked up when the sheet has them.</p>
+        <input ref={picker} type="file" accept={SHEETS.join(",")} className="sr-only" aria-label="Choose a lead sheet to import" onChange={(e) => (void send(e.target.files?.[0]), (e.target.value = ""))} />
+        <Button busy={busy} onClick={() => picker.current?.click()}>
+          <Upload className="size-3.5" aria-hidden="true" />
+          {busy ? "Importing" : "Import leads"}
+        </Button>
+      </div>
+      {error && (
+        <Banner tone="crit" title="The sheet was not imported" role="alert">
+          {error}
+        </Banner>
+      )}
+      {report && (
+        <Banner tone={report.imported > 0 ? "pos" : "warn"} title={importSummary(report)} role="status" testId="import-report">
+          {Object.keys(report.column_map).length > 0 && (
+            <p>
+              Columns used:{" "}
+              {Object.entries(report.column_map)
+                .map(([field, column]) => `${column} as ${label(field).toLowerCase()}`)
+                .join(", ")}
+              .
+            </p>
+          )}
+          {report.samples_invalid.length > 0 && <p>Numbers that could not be used, for example: {report.samples_invalid.join(", ")}.</p>}
+        </Banner>
+      )}
+    </div>
+  );
+}
 
 function Score({ lead, large = false }: { lead: Pick<Lead, "score" | "category">; large?: boolean }) {
   return (
@@ -235,6 +307,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
 
   return (
     <div className="space-y-4">
+      <ImportLeads campaign={name} onImported={reload} />
       <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
         <Segmented label="Lead quality" value={category} onChange={setCategory} options={[["", "All"], ["hot", "Hot"], ["warm", "Warm"], ["cold", "Cold"], ["unscored", "Unscored"]]} />
         <div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:grid-cols-3">
@@ -286,7 +359,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
           </EmptyState>
         ) : (
           <EmptyState title="No leads in this campaign yet">
-            Import a lead sheet on the calling engine with <code className="t-figure rounded-chip bg-sunken px-1">callagent leads import</code>.
+            Import a CSV or Excel sheet above. Each row needs a phone number.
           </EmptyState>
         )
       ) : data ? (

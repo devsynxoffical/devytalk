@@ -7,6 +7,9 @@ export const maxDuration = 300;
 
 type Context = { params: Promise<{ path: string[] }> };
 
+/** The engine accepts files up to 25 MB; the form fields around the file need a little room. */
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024 + 64 * 1024;
+
 /**
  * The dashboard's only way to the calling engine. The browser never holds a provider
  * key and never talks to the engine directly: it calls this route, which adds the
@@ -23,10 +26,22 @@ async function forward(request: NextRequest, context: Context) {
 
   const init: RequestInit = { method: request.method };
   if (request.method !== "GET") {
-    const body = await request.text();
-    if (body) {
-      init.body = body;
-      init.headers = { "Content-Type": "application/json" };
+    const type = request.headers.get("content-type") ?? "";
+    if (type.startsWith("multipart/form-data")) {
+      // A file upload (a training document or a lead list): passed through unchanged.
+      if (Number(request.headers.get("content-length") ?? 0) > MAX_UPLOAD_BYTES) {
+        return NextResponse.json({ detail: "The file is larger than 25 MB." }, { status: 413 });
+      }
+      const upload = await request.arrayBuffer();
+      if (upload.byteLength > MAX_UPLOAD_BYTES) return NextResponse.json({ detail: "The file is larger than 25 MB." }, { status: 413 });
+      init.body = upload;
+      init.headers = { "Content-Type": type };
+    } else {
+      const body = await request.text();
+      if (body) {
+        init.body = body;
+        init.headers = { "Content-Type": "application/json" };
+      }
     }
   }
   let upstream: Response;

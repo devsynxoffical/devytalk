@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DASH, budgetUse, count, dateTime, duration, label, languageName, money, percent } from "./format";
+import { DASH, budgetUse, count, dateTime, duration, fileSize, label, languageName, money, percent } from "./format";
 
 describe("number display", () => {
   it("shows a dash for a value that does not exist, never a zero", () => {
@@ -45,5 +45,14 @@ describe("budgetUse", () => {
 
   it("never shows a negative remainder or more than 100% when spend passed the budget", () => {
     expect(budgetUse(32.05, 32)).toEqual({ remaining: 0, share: 1 });
+  });
+});
+
+describe("fileSize", () => {
+  it("uses the unit a person would", () => {
+    expect(fileSize(840)).toBe("840 B");
+    expect(fileSize(12 * 1024)).toBe("12 KB");
+    expect(fileSize(3.4 * 1024 * 1024)).toBe("3.4 MB");
+    expect(fileSize(null)).toBe(DASH);
   });
 });

@@ -412,6 +412,65 @@ test("a campaign with no calls shows empty states, not zeros dressed up as resul
   await expect(page.getByText("No version to test yet")).toBeVisible();
 });
 
+test("the agent's knowledge is managed in the console: upload, check, build, remove", async () => {
+  await openCampaign(EMPTY, "Knowledge");
+  await expect(page.getByText("The agent has no documents yet")).toBeVisible();
+
+  // A file type the engine cannot read is refused before it is sent.
+  const picker = page.getByLabel("Choose documents to upload");
+  await picker.setInputFiles({ name: "notes.exe", mimeType: "application/octet-stream", buffer: Buffer.from("x") });
+  await expect(alertWith("notes.exe: this file type is not supported")).toBeVisible();
+  await page.getByRole("button", { name: "Dismiss" }).click();
+
+  await picker.setInputFiles({
+    name: "pricing.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Pricing.\n\nThe Growth plan costs 49 dollars per user per month when billed annually.\n\nThe Starter plan costs 19 dollars per user per month.\n\nSupport.\n\nSupport is available on weekdays from nine to six."),
+  });
+  await expect(toast("The document was uploaded and is being read.")).toBeVisible();
+  const row = page.getByTestId("sources").locator("tr, li", { hasText: "pricing.txt" }).first();
+  await expect(row).toContainText("Ready", { timeout: 20_000 }); // read in the background, shown without a reload
+
+  // What the agent would find for a prospect's question.
+  await page.getByLabel("Prospect question").fill("How much does the Growth plan cost?");
+  await page.getByRole("button", { name: "Find passages" }).click();
+  const results = page.getByTestId("knowledge-results");
+  await expect(results.locator("li").first()).toContainText("49 dollars");
+  await expect(results).toContainText("From pricing.txt");
+
+  // A website address is checked before it is sent.
+  await page.getByLabel("Web address").fill("not a web address");
+  await page.getByRole("button", { name: "Add website" }).click();
+  await expect(alertWith("Enter a full web address")).toBeVisible();
+
+  // Building a draft needs the AI model; without its key the engine refuses and says why.
+  await page.getByRole("button", { name: "Build a draft playbook" }).click();
+  const build = page.getByRole("group", { name: "Build a draft playbook" });
+  await expect(build).toContainText("1 ready source");
+  await build.getByRole("button", { name: "Build draft" }).click();
+  await expect(build.getByRole("alert")).toContainText("ANTHROPIC_API_KEY is not set");
+  await build.getByRole("button", { name: "Cancel" }).click();
+
+  await page.getByRole("button", { name: "Remove pricing.txt" }).click();
+  await page.getByRole("group", { name: "Remove pricing.txt" }).getByRole("button", { name: "Remove source" }).click();
+  await expect(toast("pricing.txt was removed.")).toBeVisible();
+  await expect(page.getByText("The agent has no documents yet")).toBeVisible();
+});
+
+test("leads are imported from a sheet, with duplicates and bad numbers reported", async () => {
+  await openCampaign(EMPTY, "Leads");
+  const sheet = ["First Name,Company,Phone", "Ada,Northwind,+14155550101", "Grace,Contoso,+14155550102", "Ada,Northwind,+14155550101", "Linus,Fabrikam,12"].join("\n");
+  await page.getByLabel("Choose a lead sheet to import").setInputFiles({ name: "leads.csv", mimeType: "text/csv", buffer: Buffer.from(sheet) });
+  const report = page.getByTestId("import-report");
+  await expect(report).toContainText("2 leads added.");
+  await expect(report).toContainText("1 already in this campaign");
+  await expect(report).toContainText("1 without a usable phone number");
+  await expect(page.getByTestId("lead-count")).toHaveText("2 leads");
+
+  await page.getByLabel("Choose a lead sheet to import").setInputFiles({ name: "leads.pdf", mimeType: "application/pdf", buffer: Buffer.from("x") });
+  await expect(alertWith("Choose a CSV or Excel file.")).toBeVisible();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");
@@ -453,7 +512,7 @@ test("phones get their own navigation and layouts, with nothing scrolling sidewa
   expect(await fits()).toBe(true);
   await phone.getByRole("dialog", { name: "Lead details" }).getByRole("button", { name: "Close" }).click();
 
-  for (const section of ["Calls", "Coach & playbook", "A/B tests", "Settings"]) {
+  for (const section of ["Calls", "Knowledge", "Coach & playbook", "A/B tests", "Settings"]) {
     await phone.getByRole("navigation", { name: "Campaign sections" }).getByRole("link", { name: section }).click();
     await phone.waitForLoadState("networkidle");
     expect(await fits(), `${section} fits a phone`).toBe(true);

@@ -39,13 +39,13 @@ export function errorMessage(body: unknown, status: number): string {
 }
 
 /** Call the engine through the dashboard proxy and check the answer has the shape the page expects. */
-export async function apiRequest<T>(url: string, schema: z.ZodType<T>, init?: { method?: string; body?: unknown; signal?: AbortSignal }): Promise<T> {
+export async function apiRequest<T>(url: string, schema: z.ZodType<T>, init?: { method?: string; body?: unknown; /** a file upload; the browser sets the content type */ form?: FormData; signal?: AbortSignal }): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, {
-      method: init?.method ?? "GET",
+      method: init?.method ?? (init?.form ? "POST" : "GET"),
       headers: init?.body !== undefined ? { "Content-Type": "application/json" } : undefined,
-      body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
+      body: init?.form ?? (init?.body !== undefined ? JSON.stringify(init.body) : undefined),
       signal: init?.signal,
       cache: "no-store",
     });

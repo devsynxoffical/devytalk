@@ -304,3 +304,50 @@ export const callDetailSchema = z.object({
 export type CallDetail = z.infer<typeof callDetailSchema>;
 
 export const dialResultSchema = z.object({ call_run_id: z.number() });
+
+/* ---- knowledge and training ---- */
+
+export const documentSchema = z.object({
+  id: z.number(),
+  kind: z.string(), // file | url
+  name: z.string(),
+  source_url: z.string().nullable(),
+  file_type: z.string(),
+  size_bytes: z.number(),
+  version: z.number(),
+  status: z.string(), // pending | processing | ready | failed | superseded
+  error: z.string().nullable(),
+  language: z.string().nullable(),
+  passages: z.number(),
+  characters: z.number(),
+  uploaded_at: z.string().nullable(),
+  processed_at: z.string().nullable(),
+});
+export const documentListSchema = z.array(documentSchema);
+export type TrainingDocument = z.infer<typeof documentSchema>;
+
+export const knowledgeSearchSchema = z.object({
+  passages_indexed: z.number(),
+  results: z.array(z.object({ source: z.string(), text: z.string(), score: z.number() })),
+});
+export type KnowledgeSearch = z.infer<typeof knowledgeSearchSchema>;
+
+export const trainingRunSchema = z.object({
+  id: z.number(),
+  status: z.string(), // running | done | failed
+  error: z.string().nullable(),
+  draft_version: z.number().nullable(),
+  started_at: z.string().nullable(),
+  finished_at: z.string().nullable(),
+});
+export type TrainingRun = z.infer<typeof trainingRunSchema>;
+
+export const leadImportSchema = z.object({
+  imported: z.number(),
+  invalid_phone: z.number(),
+  duplicates: z.number(),
+  dnc: z.number(),
+  column_map: z.record(z.string(), z.string()),
+  samples_invalid: z.array(z.string()),
+});
+export type LeadImport = z.infer<typeof leadImportSchema>;
