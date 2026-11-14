@@ -30,7 +30,7 @@ export function campaignTone(campaign: Pick<Campaign, "status" | "running" | "st
 function Mark() {
   return (
     <span className="grid size-7 place-items-center rounded-[7px] bg-signal" aria-hidden="true">
-      <svg viewBox="0 0 24 24" className="size-4 text-fg" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+      <svg viewBox="0 0 24 24" className="size-4 text-on-signal" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
         <path d="M5 12h.5M8.5 8.5v7M12 5v14M15.5 8.5v7M19 12h.5" />
       </svg>
     </span>
@@ -114,7 +114,7 @@ function CommandPalette({ campaigns, onClose }: { campaigns: Campaign[]; onClose
                 type="button"
                 onClick={() => go(command)}
                 onMouseMove={() => setIndex(i)}
-                className={cn("flex w-full items-center justify-between gap-3 rounded-control px-3 py-2 text-left text-[13.5px]", i === index ? "bg-signal text-fg" : "text-fg-2")}
+                className={cn("flex w-full items-center justify-between gap-3 rounded-control px-3 py-2 text-left text-[13.5px]", i === index ? "bg-signal text-on-signal" : "text-fg-2")}
               >
                 <span className="truncate">{command.label}</span>
                 <span className="flex shrink-0 items-center gap-2 text-[11.5px] text-fg-3">
@@ -253,12 +253,12 @@ export function Shell({ children }: { children: ReactNode }) {
                     href={item.href}
                     title={item.label}
                     aria-current={active ? "page" : undefined}
-                    className={cn("group relative flex h-9 items-center gap-2.5 rounded-control px-2.5 text-[13.5px] transition-colors max-lg:justify-center", active ? "bg-signal font-medium text-fg" : "hover:bg-rail-2 hover:text-fg")}
+                    className={cn("group relative flex h-9 items-center gap-2.5 rounded-control px-2.5 text-[13.5px] transition-colors max-lg:justify-center", active ? "bg-signal font-medium text-on-signal" : "hover:bg-rail-2 hover:text-fg")}
                   >
                                         <item.icon className="size-4 shrink-0" aria-hidden="true" />
                     <span className="flex-1 truncate max-lg:sr-only">{item.label}</span>
                     {item.count !== undefined && (
-                      <span className={cn("t-figure rounded-chip px-1.5 text-[11px] max-lg:absolute max-lg:right-1 max-lg:top-0.5", item.alert ? "bg-crit-mark text-white" : active ? "bg-white/70 text-fg" : "bg-sunken text-fg-2")}>{item.count}</span>
+                      <span className={cn("t-figure rounded-chip px-1.5 text-[11px] max-lg:absolute max-lg:right-1 max-lg:top-0.5", item.alert ? "bg-crit-mark text-white" : active ? "bg-white/20 text-on-signal" : "bg-sunken text-fg-2")}>{item.count}</span>
                     )}
                   </Link>
                 </li>
@@ -276,7 +276,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     <li key={c.id}>
                       <Link href={campaignHref(c.name)} className={cn("flex h-8 items-center gap-2.5 rounded-control px-2.5 text-[13px] transition-colors", active ? "bg-rail-2 font-medium text-fg" : "hover:bg-rail-2 hover:text-fg")}>
                         <span
-                          className={cn("size-1.5 shrink-0 rounded-[1px]", state.live ? "animate-live bg-signal ring-1 ring-black/45" : state.tone === "warn" ? "bg-warn-mark" : state.tone === "info" ? "bg-info-mark" : "bg-fg-3")}
+                          className={cn("size-1.5 shrink-0 rounded-[1px]", state.live ? "animate-live bg-signal" : state.tone === "warn" ? "bg-warn-mark" : state.tone === "info" ? "bg-info-mark" : "bg-fg-3")}
                           aria-hidden="true"
                         />
                         <span className="truncate">{c.name}</span>
@@ -357,7 +357,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 onClick={() => setMenu(menu === "account" ? null : "account")}
                 aria-expanded={menu === "account"}
                 aria-label="Account"
-                className="grid size-8 place-items-center rounded-control bg-signal text-[11px] font-semibold text-fg ring-1 ring-inset ring-black/10 hover:brightness-95"
+                className="grid size-8 place-items-center rounded-control bg-signal text-[11px] font-semibold text-on-signal hover:bg-accent-strong"
               >
                 OP
               </button>

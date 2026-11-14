@@ -166,8 +166,8 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
               const prospect = line.role === "user";
               return (
                 <li key={i} className={cn("flex", prospect ? "justify-end pl-8" : "pr-8")}>
-                  <div dir="auto" className={cn("max-w-full rounded-panel px-3 py-2 text-[13.5px] leading-relaxed", prospect ? "bg-signal text-fg" : "bg-sunken text-fg")}>
-                    <span className={cn("mb-0.5 block text-[10.5px] font-semibold uppercase tracking-[0.07em]", prospect ? "text-fg/60" : "text-fg-3")}>{prospect ? "Prospect" : "Agent"}</span>
+                  <div dir="auto" className={cn("max-w-full rounded-panel px-3 py-2 text-[13.5px] leading-relaxed", prospect ? "bg-signal text-on-signal" : "bg-sunken text-fg")}>
+                    <span className={cn("mb-0.5 block text-[10.5px] font-semibold uppercase tracking-[0.07em]", prospect ? "text-on-signal/75" : "text-fg-3")}>{prospect ? "Prospect" : "Agent"}</span>
                     {line.text}
                   </div>
                 </li>

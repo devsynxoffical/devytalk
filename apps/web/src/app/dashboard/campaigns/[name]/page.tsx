@@ -140,7 +140,7 @@ export default function PerformancePage({ params }: { params: Promise<{ name: st
         <MetricStrip>
           <Metric label="Total calls" value={count(r.calls.total)} note={`${count(r.calls.reviewed)} reviewed`} />
           <Metric label="Answered" value={count(r.calls.answered)} total={count(r.calls.total)} aside={<Ring share={r.calls.answered / r.calls.total} tint={SERIES.blue} label="Share of calls answered" size={44} />} />
-          <Metric label="Conversions" value={count(r.calls.conversions)} total={count(r.calls.answered)} aside={<Ring share={r.calls.conversion_rate} tint={SERIES.green} label="Conversion rate" size={44} />} />
+          <Metric label="Conversions" value={count(r.calls.conversions)} total={count(r.calls.answered)} aside={<Ring share={r.calls.conversion_rate} tint={SERIES.navy} label="Conversion rate" size={44} />} />
           <Metric label="Conversion rate" value={percent(r.calls.conversion_rate)} note="Of answered calls" />
           <Metric label="Cost per conversion" value={money(r.cost.cost_per_conversion)} note={`${money(r.cost.spend_usd)} spent`} wide />
         </MetricStrip>
@@ -169,7 +169,7 @@ export default function PerformancePage({ params }: { params: Promise<{ name: st
         <Panel title="Lead quality" description={`${count(r.leads.total)} leads. Unscored leads have no evidence yet.`}>
           <div className="space-y-3">
             {(["hot", "warm", "cold", "unscored"] as const).map((category) => (
-              <BarRow key={category} name={label(category)} share={r.leads[category] / leadMax} figure={count(r.leads[category])} tint={category === "hot" ? SERIES.green : SERIES.blue} muted={category === "unscored"} />
+              <BarRow key={category} name={label(category)} share={r.leads[category] / leadMax} figure={count(r.leads[category])} tint={category === "hot" ? SERIES.navy : SERIES.blue} muted={category === "unscored"} />
             ))}
           </div>
         </Panel>

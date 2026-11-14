@@ -150,7 +150,7 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
                     type="button"
                     aria-pressed={on}
                     onClick={() => set({ days: on ? form.days.filter((d) => d !== day) : [...form.days, day] })}
-                    className={cn("h-9 rounded-control border text-[13px] font-medium transition-colors max-sm:h-11 sm:w-12", on ? "border-fg bg-signal text-fg" : "border-line-strong bg-surface text-fg-2 hover:border-fg-3")}
+                    className={cn("h-9 rounded-control border text-[13px] font-medium transition-colors max-sm:h-11 sm:w-12", on ? "border-signal bg-signal text-on-signal" : "border-line-strong bg-surface text-fg-2 hover:border-fg-3")}
                   >
                     {DAY_TEXT[day]}
                   </button>

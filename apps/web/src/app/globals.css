@@ -2,7 +2,7 @@
 
 /*
  * DevyTalk palette: deep navy #0A1C40, bright blue #2471E7, warm orange #E6701E,
- * soft blue #5BB3FD, white. The application adds neon green #39FF14 for actions.
+ * soft blue #5BB3FD, white. The application uses the same five colours and nothing else, apart from red for errors.
  *
  * Token names are historical and say what a token is for, not its hue:
  * ink = navy text and dark surfaces · brand = the primary blue scale ·
@@ -52,9 +52,9 @@
   /*
    * ---- Application design tokens ("Ledger") ----
    * Used by the dashboard and sign-in only. The marketing site keeps the tokens above.
-   * White surfaces and black type. Neon green for actions and positive data, bright blue
-   * for links and secondary data, warm orange for warnings and highlights, deep navy for
-   * the few dark surfaces. Structure comes from hairlines, not boxes.
+   * White surfaces and black type. Bright blue for actions, links, positive states and
+   * data; warm orange for warnings and highlights; deep navy for the few dark surfaces and
+   * emphasised data; soft blue for fills. Structure comes from hairlines, not boxes.
    */
   --font-app: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
   --font-figure: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
@@ -71,15 +71,16 @@
   --color-deep: #0a1c40;         /* deep navy: the dark surface (sign-in panel, coach panel) */
   --color-rail-2: #f4f4f4;       /* rail hover */
   --color-rail-fg: #262626;
-  --color-signal: #39ff14;       /* neon green: actions, active and live markers, positive data. Never used as a text colour: it cannot be read on white */
+  --color-signal: #2471e7;       /* bright blue: primary actions, the active item, live markers */
+  --color-on-signal: #ffffff;    /* text and icons on a signal fill */
   --color-accent: #2471e7;       /* bright blue: links, focus rings, secondary data */
   --color-accent-strong: #1a5fcf;
 
   /* A state is a coloured marker beside black text. Only errors keep coloured text. */
-  --color-pos: #000000;   --color-pos-bg: #e3ffdc;   --color-pos-mark: #39ff14;
+  --color-pos: #000000;   --color-pos-bg: #e6effd;   --color-pos-mark: #2471e7;
   --color-warn: #000000;  --color-warn-bg: #fdecdd;  --color-warn-mark: #e6701e;
   --color-crit: #c4160a;  --color-crit-bg: #fde7e4;  --color-crit-mark: #e5281c;
-  --color-info: #000000;  --color-info-bg: #e6effd;  --color-info-mark: #2471e7;
+  --color-info: #000000;  --color-info-bg: #eaf5ff;  --color-info-mark: #5bb3fd;
 
   --radius-chip: 2px;
   --radius-control: 5px;
@@ -256,7 +257,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .app :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 3px; }
-.app ::selection { background: #39ff14; color: #000; }
+.app ::selection { background: #2471e7; color: #fff; }
 .app h1, .app h2, .app h3 { letter-spacing: -0.011em; }
 }
 

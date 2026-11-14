@@ -28,7 +28,7 @@ export function buttonClass(variant: NonNullable<ButtonProps["variant"]> = "seco
     "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-100 active:translate-y-px disabled:pointer-events-none disabled:opacity-45",
     size === "sm" ? "h-7 px-2.5 text-[12.5px]" : "h-9 px-3.5 text-[13.5px] max-sm:h-10",
     {
-      primary: "bg-signal text-fg ring-1 ring-inset ring-black/10 hover:brightness-95",
+      primary: "bg-signal text-on-signal hover:bg-accent-strong",
       secondary: "border border-line-strong bg-surface text-fg hover:border-fg hover:bg-sunken",
       ghost: "text-fg-2 hover:bg-sunken hover:text-fg",
       danger: "border border-crit/35 bg-surface text-crit hover:bg-crit-bg",
@@ -52,7 +52,7 @@ export function Button({ variant = "secondary", size = "md", busy = false, class
 export function Status({ tone = "neutral", children, live = false }: { tone?: Tone; children: ReactNode; live?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[12.5px] font-medium whitespace-nowrap", TONE_TEXT[tone])}>
-      <span className={cn("size-2 rounded-[2px]", live ? "animate-live bg-signal" : TONE_DOT[tone], (live || tone === "pos") && "ring-1 ring-black/45")} aria-hidden="true" />
+      <span className={cn("size-2 rounded-[2px]", live ? "animate-live bg-signal" : TONE_DOT[tone])} aria-hidden="true" />
       {children}
     </span>
   );
@@ -223,7 +223,7 @@ export function NoticeBar({ notice, onClose }: { notice: Notice; onClose: () => 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-[70] flex justify-center px-4 md:bottom-6 md:justify-end md:px-6">
       <div role={success ? "status" : "alert"} className="pointer-events-auto flex max-w-md animate-rise items-start gap-2.5 rounded-overlay border border-line-strong bg-surface px-4 py-3 text-[13px] text-fg shadow-overlay">
-        {success ? <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-signal"><Check className="size-3 text-fg" aria-hidden="true" /></span> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-crit" aria-hidden="true" />}
+        {success ? <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-signal"><Check className="size-3 text-on-signal" aria-hidden="true" /></span> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-crit" aria-hidden="true" />}
         <span className="flex-1">{notice.text}</span>
         <button type="button" onClick={onClose} aria-label="Dismiss" className="-mr-1 rounded p-0.5 text-fg-3 hover:text-fg">
           <X className="size-4" />
@@ -299,7 +299,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
           type="button"
           aria-pressed={value === key}
           onClick={() => onChange(key)}
-          className={cn("h-7 rounded-[3px] px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors max-sm:h-9 max-sm:px-3", value === key ? "bg-signal text-fg" : "text-fg-2 hover:bg-sunken")}
+          className={cn("h-7 rounded-[3px] px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors max-sm:h-9 max-sm:px-3", value === key ? "bg-signal text-on-signal" : "text-fg-2 hover:bg-sunken")}
         >
           {text}
         </button>

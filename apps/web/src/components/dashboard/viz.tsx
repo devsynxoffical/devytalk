@@ -7,17 +7,17 @@ import { cn } from "@/lib/cn";
  * Colours for data marks. Text never wears these: figures and labels stay in ink, and a
  * coloured mark beside them carries identity.
  *
- * SERIES: neon green and bright blue, told apart by lightness as much as by hue, on a
- * light track.
+ * SERIES: bright blue for a measure, deep navy for the one being emphasised (conversions,
+ * hot leads). Told apart by lightness, on a light track.
  * STATUS: reserved for state. Always shown with a word, never as colour alone.
  */
 export const SERIES = {
-  green: { mark: "#39ff14", track: "#e9e9e9" },
   blue: { mark: "#2471e7", track: "#e3ecfb" },
+  navy: { mark: "#0a1c40", track: "#e4e7ee" },
 } as const;
 
 export const STATUS = {
-  good: { mark: "#39ff14", track: "#e9e9e9" },
+  good: { mark: "#2471e7", track: "#e3ecfb" },
   warning: { mark: "#e6701e", track: "#eeeeee" },
   critical: { mark: "#e5281c", track: "#eeeeee" },
   none: { mark: "#bdbdbd", track: "#efefef" },

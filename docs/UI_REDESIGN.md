@@ -30,18 +30,18 @@ button; tables that scrolled sideways on phones; spinners instead of placeholder
 The product is a record of calls and money and a place to make a few careful
 decisions. The design treats it as a ledger and a console, not a showcase.
 
-- **Palette.** White surfaces and black type, with five colours, each with one job:
+- **Palette.** White surfaces and black type, with four colours, each with one job.
+  Nothing outside this palette is used, except red for errors and destructive actions:
 
   | Colour | Code | Job |
   | --- | --- | --- |
-  | Neon green | `#39FF14` | Application only. Primary buttons, the active navigation item, selected options, positive data. Always a fill with black text on it, never a text colour |
-  | Bright blue | `#2471E7` | Links, focus rings, secondary data, "information" markers. The marketing site's primary colour |
-  | Warm orange | `#E6701E` | Warnings and highlights: automatic pauses, drafts awaiting approval, the accent on dark surfaces |
-  | Deep navy | `#0A1C40` | The few dark surfaces: the sign-in panel, the coach panel, the marketing site's dark sections and text |
-  | Soft blue | `#5BB3FD` | Chart fills and gradients |
+  | Bright blue | `#2471E7` | Primary buttons (white text), the active navigation item, selected options, links, focus rings, positive states, data |
+  | Deep navy | `#0A1C40` | The few dark surfaces (sign-in panel, coach panel, the marketing site's dark sections and text) and the emphasised data series (conversions, hot leads) |
+  | Warm orange | `#E6701E` | Warnings and highlights: automatic pauses, drafts awaiting approval, the action on a navy surface |
+  | Soft blue | `#5BB3FD` | Chart fills, gradients, "information" markers |
 
 - **States keep black text.** A coloured square beside the word carries the state
-  (neon green, orange, red, blue). Only error messages use red text.
+  (blue, orange, red, soft blue). Only error messages use red text.
 - **Hairlines, not boxes.** Structure comes from 1px rules and alignment. A panel is
   used only where content needs its own surface. Headline figures sit in one divided
   strip, read across like a ledger line, instead of a grid of cards.
@@ -51,7 +51,7 @@ decisions. The design treats it as a ledger and a console, not a showcase.
   meaning alone.
 - **Figures are set apart.** Counts, money, durations and phone numbers use IBM Plex
   Mono with tabular digits, so columns align and numbers are found at a glance.
-- **Primary actions are neon green with black text.** Secondary actions are white
+- **Primary actions are bright blue with white text.** Secondary actions are white
   with a border; destructive ones are outlined in red.
 
 ## 3. Type
@@ -83,13 +83,13 @@ All in `apps/web/src/app/globals.css` under `@theme`, used through utilities
 | Surfaces | `paper`, `surface`, `sunken` |
 | Lines | `line`, `line-strong` |
 | Text | `fg`, `fg-2`, `fg-3` |
-| Rail | `rail`, `rail-2`, `rail-fg`, `signal` |
+| Rail | `rail`, `rail-2`, `rail-fg`, `signal`, `on-signal` |
 | Accent | `accent`, `accent-strong` |
 | Semantic | `pos`, `warn`, `crit`, `info`, each with a `-bg` tint and a `-mark` colour for the square marker |
 | Radius | `chip` 2, `control` 5, `panel` 8, `overlay` 12 |
 | Shadow | `raised`, `overlay`. Panels have none |
 | Motion | `rise`, `pop`, `slide-in`, `sheet-up`, `fade`, `sheen`, `draw`, `live` |
-| Data marks | `SERIES` (neon green and bright blue) and `STATUS` in `components/dashboard/viz.tsx`. The activity chart is a blue line over a soft-blue fill; conversions use a navy line over a neon fill |
+| Data marks | `SERIES` (bright blue and deep navy) and `STATUS` in `components/dashboard/viz.tsx`. The activity chart is a blue line over a soft-blue fill; conversions use a navy line over a blue fill |
 
 Spacing uses the 4px scale; page gutters are 16px on phones and 24px from 640px.
 Breakpoints: 640 (table instead of records), 768 (rail instead of tab bar), 1024 (rail
@@ -101,7 +101,7 @@ labels, two-pane call workspace), 1280 (metric strip in one row, two-column page
 
 | Component | Notes |
 | --- | --- |
-| `Button` | primary (ink), secondary (outlined), ghost, danger; two sizes; busy state; 40px tall on phones |
+| `Button` | primary (blue), secondary (outlined), ghost, danger; two sizes; busy state; 40px tall on phones |
 | `Status`, `Tag` | Square marker plus word; compact label |
 | `Panel`, `PageHeader` | The only surface; header with title, description and actions |
 | `MetricStrip`, `Metric` | Figures in one divided band; two columns below 1280px |
@@ -164,7 +164,7 @@ Each action that places calls asks for confirmation and shows the engine's own a
 ## 10. Not done
 
 - No dark theme.
-- The marketing website uses the navy, blue and orange palette; neon green appears only in the application.
+- Red is the one colour outside the palette. It is kept for errors and destructive actions, where orange would be confused with a warning.
 - Document upload, training and knowledge search still have no screen.
 - No user accounts or roles, so there is no team or permission screen to design.
 - The call workspace shows finished and in-progress calls from the log; it does not

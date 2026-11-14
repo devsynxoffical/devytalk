@@ -204,7 +204,7 @@ function Coach({ campaign, onDone }: { campaign: string; onDone: () => void }) {
           <h2 className="t-section text-white">AI sales coach</h2>
           <p className="mt-1 text-[13px]">Reads this campaign&apos;s reviewed calls and proposes a new draft. Nothing goes live until you approve it. Prices, terms, proof points and compliance lines are never changed.</p>
         </div>
-        <button type="button" onClick={run} disabled={busy} aria-busy={busy || undefined} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-control bg-signal px-3.5 text-[13.5px] font-semibold text-fg transition-[filter] hover:brightness-95 disabled:opacity-60 max-sm:h-10">
+        <button type="button" onClick={run} disabled={busy} aria-busy={busy || undefined} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-control bg-ember px-3.5 text-[13.5px] font-semibold text-deep transition-[filter] hover:brightness-95 disabled:opacity-60 max-sm:h-10">
           <Sparkles className={`size-3.5 ${busy ? "animate-pulse" : ""}`} aria-hidden="true" />
           {busy ? "Reviewing calls" : "Ask the coach for improvements"}
         </button>

@@ -29,7 +29,7 @@ type Detail = { campaign: Campaign; report: Report; versions: Version[]; experim
 type Details = { loading: boolean; items: Detail[]; failed: string[] };
 
 const campaignHref = (name: string, section = "") => `/dashboard/campaigns/${encodeURIComponent(name)}${section}`;
-const TONE_MARK: Record<Tone, string> = { crit: "bg-crit-mark", warn: "bg-warn-mark", info: "bg-info-mark", pos: "bg-pos-mark ring-1 ring-black/45", neutral: "bg-fg-3" };
+const TONE_MARK: Record<Tone, string> = { crit: "bg-crit-mark", warn: "bg-warn-mark", info: "bg-info-mark", pos: "bg-pos-mark", neutral: "bg-fg-3" };
 
 /** Everything the overview shows about each campaign, loaded side by side. A campaign that fails to load is named, not hidden. */
 function useDetails(campaigns: Campaign[] | null): Details {
@@ -115,7 +115,7 @@ function Activity() {
         <ErrorState message={error.message} onRetry={reload} />
       ) : data ? (
         <>
-          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={measure === "conversions" ? SERIES.green.mark : "#5bb3fd"} line={measure === "conversions" ? "#0a1c40" : SERIES.blue.mark} />
+          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={measure === "conversions" ? SERIES.blue.mark : "#5bb3fd"} line={measure === "conversions" ? SERIES.navy.mark : SERIES.blue.mark} />
           {total === 0 && <p className="t-meta mt-1 text-center">No {MEASURES[measure].toLowerCase()} in this period.</p>}
         </>
       ) : null}
@@ -284,7 +284,7 @@ export default function OverviewPage() {
             value={count(conversions)}
             total={count(answered)}
             note="Meetings booked and sales"
-            aside={<Ring share={answered > 0 ? conversions / answered : null} tint={SERIES.green} label="Conversion rate" />}
+            aside={<Ring share={answered > 0 ? conversions / answered : null} tint={SERIES.navy} label="Conversion rate" />}
           />
           <Metric testId="tile-hot" label="Hot leads" value={count(hot)} total={count(scored)} note={scored === 0 ? "No lead scored yet" : "of leads with call evidence"} />
           {budgetShare ? (
@@ -357,7 +357,7 @@ export default function OverviewPage() {
             ) : (
               <div className="space-y-3.5" data-testid="outcomes">
                 {shown.map(([name, n]) => (
-                  <BarRow key={name} name={label(name)} share={n / topOutcome} figure={count(n)} detail={calls > 0 ? `${percent(n / calls, 0)} of calls` : undefined} tint={name === "meeting_booked" || name === "sale_closed" ? SERIES.green : SERIES.blue} />
+                  <BarRow key={name} name={label(name)} share={n / topOutcome} figure={count(n)} detail={calls > 0 ? `${percent(n / calls, 0)} of calls` : undefined} tint={name === "meeting_booked" || name === "sale_closed" ? SERIES.navy : SERIES.blue} />
                 ))}
               </div>
             )}
