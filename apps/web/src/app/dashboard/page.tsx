@@ -29,7 +29,7 @@ type Detail = { campaign: Campaign; report: Report; versions: Version[]; experim
 type Details = { loading: boolean; items: Detail[]; failed: string[] };
 
 const campaignHref = (name: string, section = "") => `/dashboard/campaigns/${encodeURIComponent(name)}${section}`;
-const TONE_MARK: Record<Tone, string> = { crit: "bg-crit", warn: "bg-warn", info: "bg-info", pos: "bg-pos", neutral: "bg-fg-3" };
+const TONE_MARK: Record<Tone, string> = { crit: "bg-crit-mark", warn: "bg-warn-mark", info: "bg-info-mark", pos: "bg-pos-mark ring-1 ring-black/45", neutral: "bg-fg-3" };
 
 /** Everything the overview shows about each campaign, loaded side by side. A campaign that fails to load is named, not hidden. */
 function useDetails(campaigns: Campaign[] | null): Details {
@@ -115,7 +115,7 @@ function Activity() {
         <ErrorState message={error.message} onRetry={reload} />
       ) : data ? (
         <>
-          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={measure === "conversions" ? SERIES.green.mark : SERIES.blue.mark} />
+          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={SERIES.green.mark} />
           {total === 0 && <p className="t-meta mt-1 text-center">No {MEASURES[measure].toLowerCase()} in this period.</p>}
         </>
       ) : null}
@@ -126,7 +126,7 @@ function Activity() {
 function BackgroundWork() {
   const { data, error } = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
   return (
-    <Panel title="Background work" description="Reviews, booking notifications, training" actions={<Link href="/dashboard/system" className="text-[12.5px] font-medium text-accent hover:underline">Open</Link>} flush>
+    <Panel title="Background work" description="Reviews, booking notifications, training" actions={<Link href="/dashboard/system" className="text-[12.5px] font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">Open</Link>} flush>
       {error ? (
         <p className="px-4 py-3 text-[13px] text-crit" role="alert">{error.message}</p>
       ) : (
@@ -276,7 +276,7 @@ export default function OverviewPage() {
             value={count(answered)}
             total={count(calls)}
             note={calls === 0 ? "No calls placed yet" : `across ${count(items.length)} ${items.length === 1 ? "campaign" : "campaigns"}`}
-            aside={<Ring share={calls > 0 ? answered / calls : null} tint={SERIES.blue} label="Share of calls answered" />}
+            aside={<Ring share={calls > 0 ? answered / calls : null} tint={SERIES.ink} label="Share of calls answered" />}
           />
           <Metric
             testId="tile-conversions"
@@ -313,8 +313,8 @@ export default function OverviewPage() {
                 <ul className="divide-y divide-line" data-testid="attention">
                   {attention.map((item) => (
                     <li key={item.key}>
-                      <Link href={item.href} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-paper">
-                        <span className={`mt-1.5 size-1.5 shrink-0 self-start rounded-[1px] ${TONE_MARK[item.tone]}`} aria-hidden="true" />
+                      <Link href={item.href} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-sunken">
+                        <span className={`mt-1 size-2 shrink-0 self-start rounded-[2px] ${TONE_MARK[item.tone]}`} aria-hidden="true" />
                         <span className="min-w-0 flex-1">
                           <span className="line-clamp-2 text-[13px] font-medium text-fg">{item.title}</span>
                           <span className="t-meta mt-0.5 line-clamp-2">{item.detail}</span>
@@ -357,7 +357,7 @@ export default function OverviewPage() {
             ) : (
               <div className="space-y-3.5" data-testid="outcomes">
                 {shown.map(([name, n]) => (
-                  <BarRow key={name} name={label(name)} share={n / topOutcome} figure={count(n)} detail={calls > 0 ? `${percent(n / calls, 0)} of calls` : undefined} tint={name === "meeting_booked" || name === "sale_closed" ? SERIES.green : SERIES.blue} />
+                  <BarRow key={name} name={label(name)} share={n / topOutcome} figure={count(n)} detail={calls > 0 ? `${percent(n / calls, 0)} of calls` : undefined} tint={name === "meeting_booked" || name === "sale_closed" ? SERIES.green : SERIES.ink} />
                 ))}
               </div>
             )}
@@ -370,7 +370,7 @@ export default function OverviewPage() {
               <ul className="divide-y divide-line" data-testid="hot-leads">
                 {hotLeads.map(({ lead, campaign }) => (
                   <li key={`${campaign}-${lead.id}`}>
-                    <Link href={campaignHref(campaign, "/leads")} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-paper">
+                    <Link href={campaignHref(campaign, "/leads")} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-sunken">
                       <span className="t-figure w-8 shrink-0 text-right text-[15px] font-medium text-fg">{lead.score}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13.5px] font-medium text-fg">{lead.name || lead.phone}</span>

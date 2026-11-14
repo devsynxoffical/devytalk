@@ -30,9 +30,13 @@ button; tables that scrolled sideways on phones; spinners instead of placeholder
 The product is a record of calls and money and a place to make a few careful
 decisions. The design treats it as a ledger and a console, not a showcase.
 
-- **Paper and ink.** A warm off-white canvas (`#f6f5f1`), white working surfaces,
-  near-black text. One dark element: the navigation rail in deep green-black. One loud
-  colour, a signal lime, used only for "live" and the active marker.
+- **White, neon green, black.** White canvas and surfaces, black type, and one
+  colour: neon green (`#39ff14`). Neon green is used as a fill (primary buttons, the
+  active navigation item, selected options, the coach panel, positive data) with black
+  text on top. It is never used as a text or link colour, because it cannot be read on
+  white; links are black with a neon underline and focus rings are black.
+- **States keep black text.** A coloured square beside the word carries the state
+  (neon green, amber, red, blue). Only error messages use red text.
 - **Hairlines, not boxes.** Structure comes from 1px rules and alignment. A panel is
   used only where content needs its own surface. Headline figures sit in one divided
   strip, read across like a ledger line, instead of a grid of cards.
@@ -42,8 +46,8 @@ decisions. The design treats it as a ledger and a console, not a showcase.
   meaning alone.
 - **Figures are set apart.** Counts, money, durations and phone numbers use IBM Plex
   Mono with tabular digits, so columns align and numbers are found at a glance.
-- **Primary actions are ink black.** Green is kept for positive data and links, so a
-  button never competes with a result.
+- **Primary actions are neon green with black text.** Secondary actions are white
+  with a border; destructive ones are outlined in red.
 
 ## 3. Type
 
@@ -76,11 +80,11 @@ All in `apps/web/src/app/globals.css` under `@theme`, used through utilities
 | Text | `fg`, `fg-2`, `fg-3` |
 | Rail | `rail`, `rail-2`, `rail-fg`, `signal` |
 | Accent | `accent`, `accent-strong` |
-| Semantic | `pos`, `warn`, `crit`, `info`, each with a `-bg` tint |
+| Semantic | `pos`, `warn`, `crit`, `info`, each with a `-bg` tint and a `-mark` colour for the square marker |
 | Radius | `chip` 2, `control` 5, `panel` 8, `overlay` 12 |
 | Shadow | `raised`, `overlay`. Panels have none |
 | Motion | `rise`, `pop`, `slide-in`, `sheet-up`, `fade`, `sheen`, `draw`, `live` |
-| Data marks | `SERIES` (green, blue, orange) and `STATUS` in `components/dashboard/viz.tsx` |
+| Data marks | `SERIES` (neon green and black) and `STATUS` in `components/dashboard/viz.tsx`. The chart is a black line over a neon fill |
 
 Spacing uses the 4px scale; page gutters are 16px on phones and 24px from 640px.
 Breakpoints: 640 (table instead of records), 768 (rail instead of tab bar), 1024 (rail
@@ -155,6 +159,7 @@ Each action that places calls asks for confirmation and shows the engine's own a
 ## 10. Not done
 
 - No dark theme.
+- The marketing website still uses its earlier emerald palette; only the application uses neon green.
 - Document upload, training and knowledge search still have no screen.
 - No user accounts or roles, so there is no team or permission screen to design.
 - The call workspace shows finished and in-progress calls from the log; it does not

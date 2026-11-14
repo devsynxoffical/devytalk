@@ -118,7 +118,7 @@ export function CampaignHeader({ name }: { name: string }) {
                   className={cn("relative block whitespace-nowrap pb-2.5 pt-1 text-[13.5px] transition-colors", active ? "font-medium text-fg" : "text-fg-3 hover:text-fg")}
                 >
                   {tab.label}
-                  {active && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-t bg-fg" aria-hidden="true" />}
+                  {active && <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-t bg-signal" aria-hidden="true" />}
                 </Link>
               </li>
             );

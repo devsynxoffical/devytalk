@@ -14,9 +14,10 @@ import { cn } from "@/lib/cn";
 
 export type Tone = "pos" | "warn" | "crit" | "info" | "neutral";
 
-const TONE_TEXT: Record<Tone, string> = { pos: "text-pos", warn: "text-warn", crit: "text-crit", info: "text-info", neutral: "text-fg-2" };
-const TONE_DOT: Record<Tone, string> = { pos: "bg-pos", warn: "bg-warn", crit: "bg-crit", info: "bg-info", neutral: "bg-fg-3" };
-const TONE_SOFT: Record<Tone, string> = { pos: "bg-pos-bg text-pos", warn: "bg-warn-bg text-warn", crit: "bg-crit-bg text-crit", info: "bg-info-bg text-info", neutral: "bg-sunken text-fg-2" };
+// Text stays black whatever the state; the marker beside it carries the colour.
+const TONE_TEXT: Record<Tone, string> = { pos: "text-fg", warn: "text-fg", crit: "text-fg", info: "text-fg", neutral: "text-fg-2" };
+const TONE_DOT: Record<Tone, string> = { pos: "bg-pos-mark", warn: "bg-warn-mark", crit: "bg-crit-mark", info: "bg-info-mark", neutral: "bg-fg-3" };
+const TONE_SOFT: Record<Tone, string> = { pos: "bg-pos-bg text-fg", warn: "bg-warn-bg text-fg", crit: "bg-crit-bg text-fg", info: "bg-info-bg text-fg", neutral: "bg-sunken text-fg" };
 
 // ----------------------------------------------------------------------------- actions
 
@@ -27,8 +28,8 @@ export function buttonClass(variant: NonNullable<ButtonProps["variant"]> = "seco
     "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-100 active:translate-y-px disabled:pointer-events-none disabled:opacity-45",
     size === "sm" ? "h-7 px-2.5 text-[12.5px]" : "h-9 px-3.5 text-[13.5px] max-sm:h-10",
     {
-      primary: "bg-fg text-white hover:bg-black",
-      secondary: "border border-line-strong bg-surface text-fg hover:border-fg-3 hover:bg-paper",
+      primary: "bg-signal text-fg ring-1 ring-inset ring-black/10 hover:brightness-95",
+      secondary: "border border-line-strong bg-surface text-fg hover:border-fg hover:bg-sunken",
       ghost: "text-fg-2 hover:bg-sunken hover:text-fg",
       danger: "border border-crit/35 bg-surface text-crit hover:bg-crit-bg",
     }[variant],
@@ -51,7 +52,7 @@ export function Button({ variant = "secondary", size = "md", busy = false, class
 export function Status({ tone = "neutral", children, live = false }: { tone?: Tone; children: ReactNode; live?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[12.5px] font-medium whitespace-nowrap", TONE_TEXT[tone])}>
-      <span className={cn("size-1.5 rounded-[1px]", live ? "animate-live bg-signal" : TONE_DOT[tone])} aria-hidden="true" />
+      <span className={cn("size-2 rounded-[2px]", live ? "animate-live bg-signal" : TONE_DOT[tone], (live || tone === "pos") && "ring-1 ring-black/45")} aria-hidden="true" />
       {children}
     </span>
   );
@@ -139,7 +140,7 @@ export function Banner({ tone = "info", title, children, role, testId, actions }
   const Icon = BANNER_ICON[tone];
   return (
     <div role={role} data-testid={testId} className={cn("flex items-start gap-3 rounded-panel px-4 py-3", TONE_SOFT[tone])}>
-      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <Icon className={cn("mt-0.5 size-4 shrink-0", tone === "crit" && "text-crit")} aria-hidden="true" />
       <div className="min-w-0 flex-1 text-[13px]">
         <p className="font-semibold">{title}</p>
         {children && <div className="mt-0.5 text-fg-2">{children}</div>}
@@ -184,8 +185,8 @@ export function Loading({ what = "Loading", rows = 5, strip = true }: { what?: s
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="rounded-panel border border-crit/25 bg-crit-bg px-4 py-4" role="alert">
-      <p className="flex items-center gap-2 text-[13.5px] font-semibold text-crit">
-        <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
+      <p className="flex items-center gap-2 text-[13.5px] font-semibold text-fg">
+        <CircleAlert className="size-4 shrink-0 text-crit" aria-hidden="true" />
         This could not be loaded
       </p>
       <p className="mt-1 pl-6 text-[13px] text-fg-2">{message}</p>
@@ -221,10 +222,10 @@ export function NoticeBar({ notice, onClose }: { notice: Notice; onClose: () => 
   const success = notice.kind === "success";
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-[70] flex justify-center px-4 md:bottom-6 md:justify-end md:px-6">
-      <div role={success ? "status" : "alert"} className="pointer-events-auto flex max-w-md animate-rise items-start gap-2.5 rounded-overlay bg-fg px-4 py-3 text-[13px] text-white shadow-overlay">
-        {success ? <Check className="mt-0.5 size-4 shrink-0 text-signal" aria-hidden="true" /> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#ff9c8f]" aria-hidden="true" />}
+      <div role={success ? "status" : "alert"} className="pointer-events-auto flex max-w-md animate-rise items-start gap-2.5 rounded-overlay border border-line-strong bg-surface px-4 py-3 text-[13px] text-fg shadow-overlay">
+        {success ? <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-signal"><Check className="size-3 text-fg" aria-hidden="true" /></span> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-crit" aria-hidden="true" />}
         <span className="flex-1">{notice.text}</span>
-        <button type="button" onClick={onClose} aria-label="Dismiss" className="-mr-1 rounded p-0.5 text-white/70 hover:text-white">
+        <button type="button" onClick={onClose} aria-label="Dismiss" className="-mr-1 rounded p-0.5 text-fg-3 hover:text-fg">
           <X className="size-4" />
         </button>
       </div>
@@ -235,7 +236,7 @@ export function NoticeBar({ notice, onClose }: { notice: Notice; onClose: () => 
 /** "Are you sure" in place, where the action is: what will happen, a confirm and a way back. */
 export function Confirm({ label, children, confirmLabel, tone = "primary", busy, onConfirm, onCancel, error }: { label: string; children: ReactNode; confirmLabel: string; tone?: "primary" | "danger"; busy?: boolean; onConfirm: () => void; onCancel: () => void; error?: string | null }) {
   return (
-    <div role="group" aria-label={label} className="animate-rise rounded-control border border-line bg-paper p-3">
+    <div role="group" aria-label={label} className="animate-rise rounded-control border border-line bg-sunken p-3">
       <div className="text-[13px] text-fg-2">{children}</div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant={tone} busy={busy} onClick={onConfirm}>
@@ -257,7 +258,7 @@ export function Confirm({ label, children, confirmLabel, tone = "primary", busy,
 // ----------------------------------------------------------------------------- forms
 
 const CONTROL =
-  "w-full rounded-control border border-line-strong bg-surface px-2.5 text-[13.5px] text-fg placeholder:text-fg-3 placeholder:[font-family:var(--font-app)] placeholder:tracking-normal transition-[border-color,box-shadow] duration-100 hover:border-fg-3 focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/15 disabled:bg-sunken disabled:text-fg-3 max-sm:text-[16px]";
+  "w-full rounded-control border border-line-strong bg-surface px-2.5 text-[13.5px] text-fg placeholder:text-fg-3 placeholder:[font-family:var(--font-app)] placeholder:tracking-normal transition-[border-color,box-shadow] duration-100 hover:border-fg-3 focus:border-fg focus:outline-none focus:ring-[3px] focus:ring-signal/60 disabled:bg-sunken disabled:text-fg-3 max-sm:text-[16px]";
 
 export function Field({ label, hint, error, children, className }: { label: string; hint?: ReactNode; error?: string | null; children: ReactNode; className?: string }) {
   return (
@@ -298,7 +299,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
           type="button"
           aria-pressed={value === key}
           onClick={() => onChange(key)}
-          className={cn("h-7 rounded-[3px] px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors max-sm:h-9 max-sm:px-3", value === key ? "bg-fg text-white" : "text-fg-2 hover:bg-sunken")}
+          className={cn("h-7 rounded-[3px] px-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors max-sm:h-9 max-sm:px-3", value === key ? "bg-signal text-fg" : "text-fg-2 hover:bg-sunken")}
         >
           {text}
         </button>
@@ -357,7 +358,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, caption, initi
         {sorted.map((row) => (
           <li key={rowKey(row)}>
             {onRowClick ? (
-              <button type="button" onClick={() => onRowClick(row)} className="block w-full px-4 py-3 text-left active:bg-paper">
+              <button type="button" onClick={() => onRowClick(row)} className="block w-full px-4 py-3 text-left active:bg-sunken">
                 {mobileRow(row)}
               </button>
             ) : (

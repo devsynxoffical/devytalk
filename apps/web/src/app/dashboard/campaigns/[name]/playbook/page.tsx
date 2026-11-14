@@ -198,25 +198,25 @@ function Coach({ campaign, onDone }: { campaign: string; onDone: () => void }) {
   }
 
   return (
-    <div className="rounded-panel bg-rail px-5 py-4 text-rail-fg">
+    <div className="rounded-panel bg-signal px-5 py-4 text-fg">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 max-w-2xl">
-          <h2 className="t-section text-white">AI sales coach</h2>
+          <h2 className="t-section text-fg">AI sales coach</h2>
           <p className="mt-1 text-[13px]">Reads this campaign&apos;s reviewed calls and proposes a new draft. Nothing goes live until you approve it. Prices, terms, proof points and compliance lines are never changed.</p>
         </div>
-        <button type="button" onClick={run} disabled={busy} aria-busy={busy || undefined} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-control bg-signal px-3.5 text-[13.5px] font-semibold text-rail transition-opacity hover:opacity-90 disabled:opacity-60 max-sm:h-10">
+        <button type="button" onClick={run} disabled={busy} aria-busy={busy || undefined} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-control border border-fg bg-surface px-3.5 text-[13.5px] font-semibold text-fg transition-colors hover:bg-sunken disabled:opacity-60 max-sm:h-10">
           <Sparkles className={`size-3.5 ${busy ? "animate-pulse" : ""}`} aria-hidden="true" />
           {busy ? "Reviewing calls" : "Ask the coach for improvements"}
         </button>
       </div>
       {busy && <p className="mt-3 text-[12.5px]" role="status">This reads every reviewed call and can take a minute or two. You can stay on this page.</p>}
       {error && (
-        <p className="mt-3 rounded-control bg-white/10 px-3 py-2 text-[13px] text-white" role="alert" data-testid="coach-error">
+        <p className="mt-3 rounded-control bg-surface px-3 py-2 text-[13px] text-fg" role="alert" data-testid="coach-error">
           The coach did not produce a draft: {error}
         </p>
       )}
       {result && (
-        <p className="mt-3 rounded-control bg-white/10 px-3 py-2 text-[13px] text-white" role="status">
+        <p className="mt-3 rounded-control bg-surface px-3 py-2 text-[13px] text-fg" role="status">
           {result.version === null
             ? `The coach read ${result.reviewed_calls} reviewed calls and found no repeating pattern that justifies a change. The playbook stays as it is.`
             : `Draft version ${result.version} was created from ${result.reviewed_calls} reviewed calls with ${result.changes.length} ${result.changes.length === 1 ? "recommendation" : "recommendations"}. Review it below; it is not live.`}

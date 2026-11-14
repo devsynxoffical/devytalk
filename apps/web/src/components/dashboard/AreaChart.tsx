@@ -95,13 +95,13 @@ export function AreaChart({ points, measure, color }: { points: Point[]; measure
       >
         <defs>
           <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.55" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
         {geometry.ticks.map((tick) => (
           <g key={tick}>
-            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={geometry.y(tick)} y2={geometry.y(tick)} stroke={tick === 0 ? "#cbc8bf" : "#efede7"} strokeWidth="1" />
+            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={geometry.y(tick)} y2={geometry.y(tick)} stroke={tick === 0 ? "#c4c4c4" : "#eeeeee"} strokeWidth="1" />
             <text x={MARGIN.left - 8} y={geometry.y(tick)} textAnchor="end" dominantBaseline="central" className="t-figure fill-fg-3 text-[10.5px]">
               {count(tick)}
             </text>
@@ -115,22 +115,22 @@ export function AreaChart({ points, measure, color }: { points: Point[]; measure
           ) : null,
         )}
         {geometry.area && <path d={geometry.area} fill={`url(#${gradient})`} className="animate-fade" />}
-        <path key={measure} d={geometry.line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1" className="animate-draw" style={{ ["--draw-length" as string]: 1 }} />
+        <path key={measure} d={geometry.line} fill="none" stroke="#0a0a0a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1" className="animate-draw" style={{ ["--draw-length" as string]: 1 }} />
         {active !== null && (
           <g pointerEvents="none">
-            <line x1={geometry.xy[active][0]} x2={geometry.xy[active][0]} y1={MARGIN.top} y2={geometry.baseline} stroke="#7d848d" strokeWidth="1" strokeDasharray="2 3" />
-            <circle cx={geometry.xy[active][0]} cy={geometry.xy[active][1]} r="5" fill={color} stroke="#ffffff" strokeWidth="2" />
+            <line x1={geometry.xy[active][0]} x2={geometry.xy[active][0]} y1={MARGIN.top} y2={geometry.baseline} stroke="#6a6a6a" strokeWidth="1" strokeDasharray="2 3" />
+            <circle cx={geometry.xy[active][0]} cy={geometry.xy[active][1]} r="5" fill={color} stroke="#0a0a0a" strokeWidth="2" />
           </g>
         )}
       </svg>
       {hovered && active !== null && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-control bg-fg px-2.5 py-1.5 text-center shadow-overlay"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-control border border-line-strong bg-surface px-2.5 py-1.5 text-center shadow-overlay"
           style={{ left: Math.max(60, Math.min(width - 60, geometry.xy[active][0])), top: Math.max(44, geometry.xy[active][1] - 10) }}
         >
-          <p className="whitespace-nowrap text-[11px] text-white/65">{parseDay(hovered.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
-          <p className="whitespace-nowrap text-[13px] font-medium text-white">
-            <span className="t-figure">{count(hovered.value)}</span> <span className="font-normal text-white/65">{measure.toLowerCase()}</span>
+          <p className="whitespace-nowrap text-[11px] text-fg-3">{parseDay(hovered.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
+          <p className="whitespace-nowrap text-[13px] font-medium text-fg">
+            <span className="t-figure">{count(hovered.value)}</span> <span className="font-normal text-fg-3">{measure.toLowerCase()}</span>
           </p>
         </div>
       )}

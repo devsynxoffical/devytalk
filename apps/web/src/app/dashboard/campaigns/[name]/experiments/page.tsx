@@ -32,7 +32,7 @@ function ArmColumn({ side, arm, target, comparable, leading }: { side: "control"
         <span className="t-metric text-fg">{percent(arm.conversion_rate)}</span>
         <span className="t-meta">conversion rate</span>
       </p>
-      {!comparable && arm.conversion_rate !== null && <p className="t-meta mt-0.5 text-warn">Sample too small to rely on</p>}
+      {!comparable && arm.conversion_rate !== null && <p className="t-meta mt-0.5 font-medium text-fg">Sample too small to rely on</p>}
       <dl className="mt-3 divide-y divide-line border-y border-line text-[13px]">
         {[
           ["Leads dialed", count(arm.leads_dialed), undefined],
@@ -77,7 +77,7 @@ function RunningTest({ campaign, test, onChanged }: { campaign: string; test: Ex
 
   return (
     <Panel title={test.name} description={`Started ${dateTime(test.started_at)} · ${percent(test.variant_share, 0)} of new leads hear the new version`} actions={<Status tone={verdict.tone}>{verdict.text}</Status>} flush>
-      <p className="border-b border-line bg-paper px-4 py-3 text-[13.5px] text-fg" data-testid="test-summary">
+      <p className="border-b border-line bg-sunken px-4 py-3 text-[13.5px] text-fg" data-testid="test-summary">
         {test.summary}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2">
@@ -157,7 +157,7 @@ function StartForm({ campaign, candidates, liveVersion, onStarted }: { campaign:
     return (
       <EmptyState title="No version to test yet">
         A test compares the live playbook with another version. Ask the coach for a draft on the{" "}
-        <Link href={`/dashboard/campaigns/${encodeURIComponent(campaign)}/playbook`} className="font-medium text-accent hover:underline">
+        <Link href={`/dashboard/campaigns/${encodeURIComponent(campaign)}/playbook`} className="font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">
           Coach &amp; playbook
         </Link>{" "}
         tab first.

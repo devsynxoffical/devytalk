@@ -117,6 +117,7 @@ test("the overview adds up real results across campaigns and lists what needs a 
 
 test("the command palette jumps to any campaign section, and the grid filters by name", async () => {
   await page.goto("/dashboard");
+  await expect(page.getByTestId("tile-calls")).toBeVisible(); // the page is loaded and listening
   await page.keyboard.press("Control+k");
   const search = page.getByRole("combobox", { name: "Search campaigns and pages" });
   await search.fill("accounting leads");

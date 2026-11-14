@@ -42,30 +42,31 @@
   /*
    * ---- Application design tokens ("Ledger") ----
    * Used by the dashboard and sign-in only. The marketing site keeps the tokens above.
-   * Surfaces are warm paper and white; structure comes from hairlines, not boxes.
+   * White surfaces, neon green for emphasis, black type; structure comes from hairlines, not boxes.
    */
   --font-app: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
   --font-figure: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
-  --color-paper: #f6f5f1;        /* the canvas */
+  --color-paper: #ffffff;        /* the canvas */
   --color-surface: #ffffff;      /* panels, tables */
-  --color-sunken: #efede7;       /* wells, table headers, tracks */
-  --color-line: #e4e2db;         /* hairlines */
-  --color-line-strong: #cbc8bf;  /* control borders */
-  --color-fg: #15181c;           /* primary text */
-  --color-fg-2: #4d545c;         /* secondary text */
-  --color-fg-3: #7d848d;         /* labels, meta */
-  --color-rail: #0f1f1b;         /* navigation rail */
-  --color-rail-2: #1a2f29;       /* rail hover / active */
-  --color-rail-fg: #b9c6c1;
-  --color-signal: #c6f24e;       /* the one loud colour: live and active markers */
-  --color-accent: #0b7a5b;       /* links, focus, positive data */
-  --color-accent-strong: #085f47;
+  --color-sunken: #f4f4f4;       /* wells, hover, tracks */
+  --color-line: #e6e6e6;         /* hairlines */
+  --color-line-strong: #c4c4c4;  /* control borders */
+  --color-fg: #000000;           /* text is black */
+  --color-fg-2: #262626;         /* secondary text */
+  --color-fg-3: #6a6a6a;         /* labels, meta */
+  --color-rail: #ffffff;         /* navigation rail */
+  --color-rail-2: #f4f4f4;       /* rail hover */
+  --color-rail-fg: #262626;
+  --color-signal: #39ff14;       /* neon green: actions, active and live markers, positive data. Never used as a text colour: it cannot be read on white */
+  --color-accent: #000000;       /* links and focus rings are black, so they are always legible */
+  --color-accent-strong: #000000;
 
-  --color-pos: #0b7a5b;   --color-pos-bg: #e6f3ee;
-  --color-warn: #a35a05;  --color-warn-bg: #fbf1dd;
-  --color-crit: #b42318;  --color-crit-bg: #fbe9e6;
-  --color-info: #1d5fbf;  --color-info-bg: #e7effb;
+  /* A state is a coloured marker beside black text. Only errors keep coloured text. */
+  --color-pos: #000000;   --color-pos-bg: #e3ffdc;   --color-pos-mark: #39ff14;
+  --color-warn: #000000;  --color-warn-bg: #fff2cc;  --color-warn-mark: #f5a400;
+  --color-crit: #c4160a;  --color-crit-bg: #fde7e4;  --color-crit-mark: #e5281c;
+  --color-info: #000000;  --color-info-bg: #e9f0ff;  --color-info-mark: #2f6fed;
 
   --radius-chip: 2px;
   --radius-control: 5px;
@@ -91,7 +92,7 @@
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes sheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   @keyframes draw { from { stroke-dashoffset: var(--draw-length, 2000); } to { stroke-dashoffset: 0; } }
-  @keyframes live { 0% { box-shadow: 0 0 0 0 rgb(198 242 78 / 0.55); } 100% { box-shadow: 0 0 0 7px rgb(198 242 78 / 0); } }
+  @keyframes live { 0% { box-shadow: 0 0 0 0 rgb(57 255 20 / 0.6); } 100% { box-shadow: 0 0 0 7px rgb(57 255 20 / 0); } }
 
   --animate-marquee: marquee 40s linear infinite;
   --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
@@ -242,7 +243,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .app :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 3px; }
-.app ::selection { background: #d6efe6; }
+.app ::selection { background: #39ff14; color: #000; }
 .app h1, .app h2, .app h3 { letter-spacing: -0.011em; }
 }
 
@@ -259,7 +260,7 @@
 /* Loading placeholder with a slow sheen. */
 @utility skeleton {
   border-radius: var(--radius-chip);
-  background: linear-gradient(90deg, var(--color-sunken) 25%, #f7f6f2 50%, var(--color-sunken) 75%);
+  background: linear-gradient(90deg, var(--color-sunken) 25%, #fbfbfb 50%, var(--color-sunken) 75%);
   background-size: 200% 100%;
   animation: var(--animate-sheen);
 }
@@ -278,7 +279,7 @@
 .dt td { padding: 9px 12px; border-bottom: 1px solid var(--color-line); font-size: 13px; line-height: 18px; vertical-align: top; color: var(--color-fg-2); }
 .dt tbody tr:last-child td { border-bottom: 0; }
 .dt tbody tr[data-clickable="true"] { cursor: pointer; transition: background-color 120ms; }
-.dt tbody tr[data-clickable="true"]:hover { background: #faf9f6; }
+.dt tbody tr[data-clickable="true"]:hover { background: #f7f7f7; }
 .dt .num { text-align: right; font-family: var(--font-figure); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .dt th.num { font-family: inherit; letter-spacing: 0.06em; }
 @media (width < 40rem) {

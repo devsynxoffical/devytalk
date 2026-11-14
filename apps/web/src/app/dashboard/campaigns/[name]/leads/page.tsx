@@ -62,7 +62,7 @@ function Profile({ data }: { data: LeadDetail }) {
         {(data.evidence.quotes?.length ?? 0) > 0 && (
           <ul className="mt-3 space-y-1.5">
             {data.evidence.quotes!.map((q) => (
-              <li key={q} dir="auto" className="border-l-2 border-accent/40 pl-3 text-[13px] text-fg-2">
+              <li key={q} dir="auto" className="border-l-[3px] border-signal pl-3 text-[13px] text-fg-2">
                 “{q}”
               </li>
             ))}
@@ -134,11 +134,11 @@ function Profile({ data }: { data: LeadDetail }) {
                 {call.summary && <p className="mt-1.5 text-fg-2">{call.summary}</p>}
                 {call.transcript.length > 0 && (
                   <>
-                    <button type="button" className="mt-1.5 text-[12.5px] font-medium text-accent hover:underline" aria-expanded={openCall === call.call_run_id} onClick={() => setOpenCall(openCall === call.call_run_id ? null : call.call_run_id)}>
+                    <button type="button" className="mt-1.5 text-[12.5px] font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg" aria-expanded={openCall === call.call_run_id} onClick={() => setOpenCall(openCall === call.call_run_id ? null : call.call_run_id)}>
                       {openCall === call.call_run_id ? "Hide transcript" : "Show transcript"}
                     </button>
                     {openCall === call.call_run_id && (
-                      <ol className="mt-2 animate-rise space-y-2 rounded-control bg-paper p-3">
+                      <ol className="mt-2 animate-rise space-y-2 rounded-control bg-sunken p-3">
                         {call.transcript.map((line, i) => (
                           <li key={i} dir="auto">
                             <span className="t-eyebrow mr-2">{line.role === "user" ? "Prospect" : "Agent"}</span>

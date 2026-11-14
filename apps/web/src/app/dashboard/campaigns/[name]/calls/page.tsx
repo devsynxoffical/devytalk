@@ -94,7 +94,7 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
               </div>
             ))}
           </dl>
-          {review.ai_disclosed === false && detail.transcript.length > 0 && <p className="mt-2 text-[12.5px] text-warn">The review found no point where the agent said it is an AI assistant.</p>}
+          {review.ai_disclosed === false && detail.transcript.length > 0 && <p className="mt-2 text-[12.5px] font-medium text-fg">The review found no point where the agent said it is an AI assistant.</p>}
         </section>
       )}
 
@@ -166,8 +166,8 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
               const prospect = line.role === "user";
               return (
                 <li key={i} className={cn("flex", prospect ? "justify-end pl-8" : "pr-8")}>
-                  <div dir="auto" className={cn("max-w-full rounded-panel px-3 py-2 text-[13.5px] leading-relaxed", prospect ? "bg-fg text-white" : "bg-sunken text-fg")}>
-                    <span className={cn("mb-0.5 block text-[10.5px] font-semibold uppercase tracking-[0.07em]", prospect ? "text-white/60" : "text-fg-3")}>{prospect ? "Prospect" : "Agent"}</span>
+                  <div dir="auto" className={cn("max-w-full rounded-panel px-3 py-2 text-[13.5px] leading-relaxed", prospect ? "bg-signal text-fg" : "bg-sunken text-fg")}>
+                    <span className={cn("mb-0.5 block text-[10.5px] font-semibold uppercase tracking-[0.07em]", prospect ? "text-fg/60" : "text-fg-3")}>{prospect ? "Prospect" : "Agent"}</span>
                     {line.text}
                   </div>
                 </li>
@@ -178,7 +178,7 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
       </section>
 
       {detail.recording_url && (
-        <a href={detail.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent hover:underline">
+        <a href={detail.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">
           Open the recording at the phone provider <ExternalLink className="size-3.5" aria-hidden="true" />
         </a>
       )}
@@ -315,8 +315,8 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
                   const Direction = call.mode === "voicemail" ? Voicemail : call.direction === "inbound" ? ArrowDownLeft : ArrowUpRight;
                   return (
                     <li key={call.call_run_id}>
-                      <button type="button" onClick={() => setSelected(call.call_run_id)} aria-current={active && wide ? "true" : undefined} className={cn("relative flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-paper", active && wide && "bg-paper")}>
-                        {active && wide && <span className="absolute inset-y-0 left-0 w-[3px] bg-fg" aria-hidden="true" />}
+                      <button type="button" onClick={() => setSelected(call.call_run_id)} aria-current={active && wide ? "true" : undefined} className={cn("relative flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-sunken", active && wide && "bg-sunken")}>
+                        {active && wide && <span className="absolute inset-y-0 left-0 w-1 bg-signal" aria-hidden="true" />}
                         <Direction className="mt-0.5 size-3.5 shrink-0 text-fg-3" aria-label={call.mode === "voicemail" ? "Voicemail" : label(call.direction)} />
                         <span className="min-w-0 flex-1">
                           <span className="flex items-baseline justify-between gap-3">
