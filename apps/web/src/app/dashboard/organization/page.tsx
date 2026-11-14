@@ -14,6 +14,7 @@ function OwnSettings({ settings, editable, onSaved }: { settings: OrganizationSe
   const [transfer, setTransfer] = useState(settings.human_transfer_number ?? "");
   const [webhook, setWebhook] = useState(settings.booking_webhook_url ?? "");
   const [secret, setSecret] = useState("");
+  const [retention, setRetention] = useState(settings.retention_days === null ? "" : String(settings.retention_days));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,15 +22,18 @@ function OwnSettings({ settings, editable, onSaved }: { settings: OrganizationSe
     setTransfer(settings.human_transfer_number ?? "");
     setWebhook(settings.booking_webhook_url ?? "");
     setSecret("");
+    setRetention(settings.retention_days === null ? "" : String(settings.retention_days));
   }, [settings]);
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    const days = retention.trim() ? Number(retention) : null;
+    if (days !== null && (!Number.isInteger(days) || days < 1 || days > 3650)) return setError("Keep call content for a whole number of days from 1 to 3650, or leave it empty to keep everything.");
     setBusy(true);
     setError(null);
     try {
       // The secret is sent only when a new one was typed: leaving it empty keeps the one already set.
-      const body: Record<string, string | null> = { human_transfer_number: transfer.trim() || null, booking_webhook_url: webhook.trim() || null };
+      const body: Record<string, string | number | null> = { human_transfer_number: transfer.trim() || null, booking_webhook_url: webhook.trim() || null, retention_days: days };
       if (secret) body.booking_webhook_secret = secret;
       await apiRequest(backendUrl(["organization", "settings"]), organizationSettingsSchema, { method: "PUT", body });
       onSaved({ kind: "success", text: "Saved. Calls that start from now on use these settings." });
@@ -41,7 +45,7 @@ function OwnSettings({ settings, editable, onSaved }: { settings: OrganizationSe
   }
 
   return (
-    <Panel title="Transfers and bookings" description="Where the agent hands a call to a person, and where your own system is told about a booked meeting.">
+    <Panel title="Transfers, bookings and retention" description="Where the agent hands a call to a person, where your own system is told about a booked meeting, and how long call content is kept.">
       <form onSubmit={save} className="grid max-w-2xl grid-cols-1 gap-4 [&>*]:min-w-0" noValidate>
         <Field label="Transfer calls to" hint="A phone number in international form, such as +14155550100. Empty: the agent does not offer to transfer.">
           <Input value={transfer} onChange={(e) => setTransfer(e.target.value)} inputMode="tel" autoComplete="off" disabled={!editable} placeholder="+14155550100" />
@@ -54,6 +58,9 @@ function OwnSettings({ settings, editable, onSaved }: { settings: OrganizationSe
           hint={settings.booking_webhook_signed ? "A secret is set and is never shown. Type a new one to replace it; leave this empty to keep it." : "Optional. With a secret, each report is signed so your system can check it came from here."}
         >
           <Input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="new-password" disabled={!editable || !webhook.trim()} />
+        </Field>
+        <Field label="Keep what was said on calls for" hint="Days. After that, transcripts, reviews and recording links are removed; when a call happened, how long it lasted and what it cost are kept. Empty: kept until someone is erased." className="max-w-xs">
+          <Input type="number" inputMode="numeric" min={1} max={3650} value={retention} onChange={(e) => setRetention(e.target.value)} disabled={!editable} className="t-figure" placeholder="Everything is kept" />
         </Field>
         {error && (
           <p className="text-[13px] font-medium text-crit" role="alert">

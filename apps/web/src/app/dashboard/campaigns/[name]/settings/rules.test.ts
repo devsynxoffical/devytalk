@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildRules } from "./page";
 
-const form = { days: ["mon", "tue", "wed", "thu", "fri"], start: "09:00", end: "18:00", attempts: "3", retry: "240", perDay: "", perMonth: "", budget: "", meetings: "", optOut: "" };
+const form = { days: ["mon", "tue", "wed", "thu", "fri"], start: "09:00", end: "18:00", attempts: "3", retry: "240", perDay: "", perMonth: "", budget: "", meetings: "", optOut: "", consent: false };
 
 describe("calling rules form", () => {
   it("sends weekday numbers and leaves out limits that were left empty", () => {
@@ -28,5 +28,9 @@ describe("calling rules form", () => {
     expect(errors).toMatchObject({ days: "Choose at least one day.", end: "Must be later than the start.", attempts: "A whole number from 1 to 10.", budget: expect.stringContaining("above zero") });
     expect(errors.retry).toBeDefined();
     expect(errors.optOut).toBeDefined();
+  });
+  it("sends the consent rule only when it is on, and removes it when it is switched off", () => {
+    expect(buildRules({ ...form, consent: true }, {}).body?.require_consent).toBe(true);
+    expect(buildRules(form, { require_consent: true }).body).not.toHaveProperty("require_consent");
   });
 });

@@ -98,6 +98,15 @@ Rules the dashboard keeps:
   Organizations screen), where calls are transferred and where bookings are reported.
   The webhook's signing secret can be set and replaced, never read back.
 - **API keys** for an organization's own systems: a name, a role, shown once, revocable.
+- **Do not call**: the numbers an organization never calls. Add one, import a list (a
+  public register, another system's suppression list), search; an admin can take a
+  number off, and can erase a person on request: their details and what was said on
+  their calls are removed, the number stays on the list, and recordings held at the
+  phone provider are listed so they can be deleted there.
+- **Consent and retention**: a campaign can be set to call only people with a ground
+  for calling on record; an organization chooses how many days call content is kept.
+  These are mechanisms. Whether a setting satisfies the law of a market is a legal
+  question nobody has answered here (the engine's `docs/COMPLIANCE.md`).
 - **Light and dark themes**, chosen in the account menu and kept in the browser.
 - **A call in progress** is followed in the Calls section: the transcript fills in as
   people speak.

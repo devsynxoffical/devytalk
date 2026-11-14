@@ -900,6 +900,85 @@ test("an organization calls from its own numbers, sets its own transfers and boo
   await bolt.context.close();
 });
 
+test("an organization keeps its own do-not-call list, erases a person on request, and sets consent and retention", async ({ browser, request }) => {
+  const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
+  const tab = bolt.tab;
+  const said = (text: string) => tab.getByRole("status").filter({ hasText: text });
+
+  // Two people to call, in Bolt's own campaign.
+  await tab.goto(`/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}/leads`);
+  const sheet = ["First Name,Company,Phone", "Mina,Harbor Cafe,+14155550301", "Otto,Pier Books,+14155550302"].join("\n");
+  await tab.getByLabel("Choose a lead sheet to import").setInputFiles({ name: "leads.csv", mimeType: "text/csv", buffer: Buffer.from(sheet) });
+  await expect(tab.getByTestId("import-report")).toContainText("2 leads added.");
+
+  // The list starts empty; a number is added by hand, and something that is not a number is refused.
+  await tab.getByRole("button", { name: "Account" }).click();
+  await tab.getByRole("link", { name: "Do not call" }).click();
+  await expect(tab.getByText("Nobody is on the list yet")).toBeVisible();
+  await tab.getByLabel("Phone number", { exact: true }).fill("not a number");
+  await tab.getByRole("button", { name: "Add number" }).click();
+  await expect(tab.getByRole("alert").filter({ hasText: "is not a phone number" })).toBeVisible();
+  await tab.getByLabel("Phone number", { exact: true }).fill("+1 415 555 0302");
+  await tab.getByLabel("Reason").fill("Asked by email");
+  await tab.getByRole("button", { name: "Add number" }).click();
+  await expect(said("will not be called again.")).toBeVisible();
+  await expect(tab.getByTestId("do-not-call")).toContainText("+14155550302");
+  await expect(tab.getByTestId("do-not-call")).toContainText("Asked by email");
+
+  // A whole list is imported: what was already there and what is not a number are counted, not hidden.
+  const list = ["+14155550302", "+14155550401", "+14155550402", "twelve"].join("\n");
+  await tab.getByLabel("Choose a list of numbers to import").setInputFiles({ name: "register.txt", mimeType: "text/plain", buffer: Buffer.from(list) });
+  await expect(said("2 numbers added, 1 already on the list. 1 could not be read as a phone number")).toBeVisible();
+  await expect(tab.getByRole("heading", { name: "3 numbers" })).toBeVisible();
+  await tab.getByLabel("Find a number").fill("0401");
+  await expect(tab.getByTestId("do-not-call").locator("tbody tr")).toHaveCount(1);
+  await tab.getByLabel("Find a number").fill("");
+
+  // Only an admin takes a number off the list, and is asked first.
+  await tab.getByRole("button", { name: "Take +14155550402 off the list" }).click();
+  await tab.getByRole("button", { name: "Remove from the list" }).click();
+  await expect(said("+14155550402 was taken off the list and may be called again.")).toBeVisible();
+  await expect(tab.getByRole("heading", { name: "2 numbers" })).toBeVisible();
+
+  // The first organization's list is its own: none of Bolt's numbers are on it.
+  await page.goto("/dashboard/do-not-call");
+  await expect(page.getByRole("heading", { name: "Do not call", level: 1 })).toBeVisible();
+  expect(JSON.stringify((await fromPage(page, "GET", "/api/backend/do-not-call?limit=500")).body)).not.toMatch(/4155550302|4155550401/);
+
+  // A person asks to be erased: their details go, and the number stays on the list.
+  await tab.getByLabel("Phone number of the person to erase").fill("+14155550301");
+  await tab.getByRole("button", { name: "Erase this person…" }).click();
+  await tab.getByRole("button", { name: "Erase", exact: true }).click();
+  await expect(tab.getByTestId("erased")).toContainText("1 lead records");
+  await expect(tab.getByTestId("erased")).toContainText("The number is on the do-not-call list.");
+  await expect(tab.getByTestId("do-not-call")).toContainText("+14155550301");
+  await tab.goto(`/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}/leads`);
+  await expect(tab.getByTestId("lead-count")).toBeVisible();
+  await expect(tab.getByText("Mina")).toHaveCount(0);
+  await expect(tab.getByText("Harbor Cafe")).toHaveCount(0);
+
+  // The campaign calls only people with a ground for it on record.
+  await tab.goto(`/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}/settings`);
+  await tab.getByLabel("Only call people with consent on record").check();
+  await tab.getByRole("button", { name: "Save rules" }).click();
+  await expect(said("Calling rules saved.")).toBeVisible();
+  await tab.reload();
+  await expect(tab.getByLabel("Only call people with consent on record")).toBeChecked();
+
+  // What was said on calls is kept for a period the organization chooses.
+  await tab.goto("/dashboard/organization");
+  await tab.getByLabel("Keep what was said on calls for").fill("0");
+  await tab.getByRole("button", { name: "Save" }).click();
+  await expect(tab.getByRole("alert").filter({ hasText: "whole number of days" })).toBeVisible();
+  await tab.getByLabel("Keep what was said on calls for").fill("90");
+  await tab.getByRole("button", { name: "Save" }).click();
+  await expect(said("Saved.")).toBeVisible();
+  await tab.reload();
+  await expect(tab.getByLabel("Keep what was said on calls for")).toHaveValue("90");
+  await expect(tab.getByLabel("Transfer calls to")).toHaveValue("+14155550299"); // the rest is as it was
+  await bolt.context.close();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");

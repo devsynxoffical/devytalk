@@ -82,6 +82,8 @@ export const rulesSchema = z.object({
     ends_at: z.string().nullable(),
     stop_after_meetings: z.number().nullable(),
     max_opt_out_rate: z.number().nullable(),
+    /** Only people with a ground for calling on record are called. */
+    require_consent: z.boolean().default(false),
   }),
   /** What this campaign overrides, exactly as stored. Anything not listed follows the engine's defaults. */
   stored: z.record(z.string(), z.unknown()).default({}),
@@ -442,6 +444,8 @@ export const organizationSettingsSchema = z.object({
   cost_per_connected_minute_usd: z.number().default(0),
   cost_per_call_attempt_usd: z.number().default(0),
   can_place_calls: z.boolean().default(false),
+  /** Days after which what was said on a call is removed; null keeps everything. */
+  retention_days: z.number().nullable().default(null),
 });
 export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
 
@@ -459,4 +463,22 @@ export const apiKeyListSchema = z.array(apiKeySchema);
 /** Only the answer to creating a key holds the key itself. */
 export const newApiKeySchema = apiKeySchema.extend({ key: z.string() });
 export type ApiKey = z.infer<typeof apiKeySchema>;
+
+export const doNotCallSchema = z.object({
+  total: z.number(),
+  entries: z.array(z.object({ id: z.number(), phone: z.string(), reason: z.string().default(""), added_at: z.string().nullable() })),
+});
+export type DoNotCallEntry = z.infer<typeof doNotCallSchema>["entries"][number];
+export const doNotCallImportSchema = z.object({ added: z.number(), already_listed: z.number(), invalid: z.number(), samples_invalid: z.array(z.string()).default([]) });
+export const erasureSchema = z.object({
+  leads: z.number(),
+  calls: z.number(),
+  appointments: z.number(),
+  website_messages: z.number(),
+  notifications: z.number(),
+  on_do_not_call_list: z.boolean(),
+  /** Held by the phone provider: to be deleted there. Returned this once. */
+  recordings_to_delete_at_the_provider: z.array(z.string()).default([]),
+});
+export type Erasure = z.infer<typeof erasureSchema>;
 

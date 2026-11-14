@@ -13,7 +13,7 @@ import { InboundPanel, LanguagesPanel } from "@/components/dashboard/CampaignSet
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 const DAY_TEXT = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" };
 
-type Form = { days: string[]; start: string; end: string; attempts: string; retry: string; perDay: string; perMonth: string; budget: string; meetings: string; optOut: string };
+type Form = { days: string[]; start: string; end: string; attempts: string; retry: string; perDay: string; perMonth: string; budget: string; meetings: string; optOut: string; consent: boolean };
 
 const text = (value: number | null) => (value === null ? "" : String(value));
 
@@ -30,6 +30,7 @@ function toForm(rules: Rules): Form {
     budget: text(r.budget_usd),
     meetings: text(r.stop_after_meetings),
     optOut: r.max_opt_out_rate === null ? "" : String(Math.round(r.max_opt_out_rate * 100)),
+    consent: r.require_consent,
   };
 }
 
@@ -73,6 +74,8 @@ export function buildRules(form: Form, stored: Record<string, unknown>): { body?
     if (value === undefined) delete body[key];
     else body[key] = value;
   }
+  if (form.consent) body.require_consent = true;
+  else delete body.require_consent;
   return { body, errors };
 }
 
@@ -188,6 +191,16 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
           <Field label="Minutes between attempts" hint="At least 5" error={errors.retry}>
             <Input type="number" inputMode="numeric" min={5} value={form.retry} onChange={(e) => set({ retry: e.target.value })} className="t-figure" />
           </Field>
+        </Group>
+
+        <Group id="consent" title="Who may be called" description="Whether a person needs a ground for being called on record: their consent, or an existing relationship. It is recorded when leads are imported.">
+          <label className="flex items-start gap-2.5 text-[13.5px] text-fg sm:col-span-2">
+            <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-accent)]" checked={form.consent} onChange={(e) => set({ consent: e.target.checked })} />
+            <span>
+              Only call people with consent on record
+              <span className="t-meta mt-0.5 block">Leads with nothing on record stay in the list and are never called, by the dialer or by hand.</span>
+            </span>
+          </label>
         </Group>
 
         <Group id="limits" title="Volume limits" description="Leave a field empty for no limit. When a limit is reached the campaign waits for the next day or month.">
