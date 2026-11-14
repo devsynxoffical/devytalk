@@ -482,3 +482,33 @@ export const erasureSchema = z.object({
 });
 export type Erasure = z.infer<typeof erasureSchema>;
 
+export const webhookEndpointSchema = z.object({
+  id: z.number(),
+  url: z.string(),
+  description: z.string().default(""),
+  /** Public event names, or ["*"] for all of them. */
+  events: z.array(z.string()),
+  active: z.boolean(),
+  disabled_reason: z.string().nullable().default(null),
+  failures_in_a_row: z.number().default(0),
+  created_at: z.string().nullable().default(null),
+  last_delivery_at: z.string().nullable().default(null),
+  last_status: z.number().nullable().default(null),
+});
+export type WebhookEndpoint = z.infer<typeof webhookEndpointSchema>;
+export const webhookListSchema = z.object({ events: z.array(z.string()), endpoints: z.array(webhookEndpointSchema) });
+/** The answer to creating an endpoint or replacing its secret: the only time the secret is sent. */
+export const newWebhookSchema = webhookEndpointSchema.extend({ secret: z.string() });
+export const webhookDeliverySchema = z.object({
+  id: z.number(),
+  event: z.string(),
+  status: z.enum(["pending", "delivered", "failed"]),
+  attempts: z.number(),
+  response_status: z.number().nullable().default(null),
+  error: z.string().nullable().default(null),
+  duration_ms: z.number().nullable().default(null),
+  created_at: z.string().nullable().default(null),
+});
+export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
+export const webhookDeliveryListSchema = z.array(webhookDeliverySchema);
+

@@ -979,6 +979,74 @@ test("an organization keeps its own do-not-call list, erases a person on request
   await bolt.context.close();
 });
 
+test("an organization has its own systems told about calls and bookings, at addresses it registers", async ({ browser, request }) => {
+  const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
+  const tab = bolt.tab;
+  const said = (text: string) => tab.getByRole("status").filter({ hasText: text });
+  await tab.goto("/dashboard");
+  await tab.getByRole("button", { name: "Account" }).click();
+  await tab.getByRole("link", { name: "Webhooks" }).click();
+  await expect(tab.getByText("No endpoints yet")).toBeVisible();
+
+  // Only an https address is accepted; one inside a network is refused by the engine, not by the form.
+  await tab.getByRole("button", { name: "New endpoint" }).click();
+  await expect(tab.getByLabel("A call is over and its outcome is known")).toBeChecked(); // what a CRM usually wants is chosen to begin with
+  await expect(tab.getByLabel("A meeting is booked")).toBeChecked();
+  await tab.getByLabel("Address").fill("https://10.0.0.5/hooks");
+  await tab.getByRole("button", { name: "Add endpoint" }).click();
+  await expect(tab.getByRole("alert").filter({ hasText: "is not a public address" })).toBeVisible();
+  await tab.getByLabel("Address").fill("https://hooks.bolt.example/devytalk");
+  await tab.getByLabel("What it is").fill("CRM");
+  await tab.getByLabel("A call is placed").check();
+  await tab.getByRole("button", { name: "Add endpoint" }).click();
+
+  // The signing secret is shown once.
+  const secret = (await tab.getByTestId("new-secret").getByTestId("copy-value").textContent()) ?? "";
+  expect(secret).toMatch(/^whsec_/);
+  await tab.getByRole("button", { name: "I have copied it" }).click();
+  const row = tab.getByTestId("webhooks").locator("tr", { hasText: "hooks.bolt.example" });
+  await expect(row).toContainText("3 events");
+  await expect(row).toContainText("On");
+  await expect(row).toContainText("Never");
+  expect(JSON.stringify((await fromPage(tab, "GET", "/api/backend/webhooks")).body)).not.toContain(secret);
+
+  // A test delivery says how it went. This address does not exist, and the console says so instead of pretending.
+  await tab.getByRole("button", { name: "Send a test to https://hooks.bolt.example/devytalk" }).click();
+  await expect(tab.getByRole("alert").filter({ hasText: "The test did not arrive." })).toBeVisible();
+  await tab.getByRole("button", { name: "Deliveries to https://hooks.bolt.example/devytalk" }).click();
+  const sent = tab.getByTestId("deliveries");
+  await expect(sent.locator("li")).toHaveCount(1);
+  await expect(sent).toContainText("Failed");
+  await expect(sent).toContainText("ping");
+  await expect(sent.getByRole("button", { name: "Send again" })).toHaveCount(0); // a test is sent anew, not again
+  await tab.keyboard.press("Escape");
+
+  // Switched off and on again; a new secret; all asked about first.
+  await row.getByRole("button", { name: "Switch off" }).click();
+  await tab.getByRole("group", { name: "Switch off" }).getByRole("button", { name: "Switch off" }).click();
+  await expect(said("Switched off.")).toBeVisible();
+  await expect(row).toContainText("Switched off by an admin.");
+  await row.getByRole("button", { name: "Switch on" }).click();
+  await expect(said("Switched on.")).toBeVisible();
+  await row.getByRole("button", { name: "New secret" }).click();
+  await tab.getByRole("group", { name: "Replace the secret" }).getByRole("button", { name: "Replace the secret" }).click();
+  const replaced = (await tab.getByTestId("new-secret").getByTestId("copy-value").textContent()) ?? "";
+  expect(replaced).toMatch(/^whsec_/);
+  expect(replaced).not.toBe(secret);
+
+  // The first organization sees none of this, and a key cannot register an address, whatever its role.
+  expect(JSON.stringify((await fromPage(page, "GET", "/api/backend/webhooks")).body)).not.toContain("bolt.example");
+  const made = await fromPage(tab, "POST", "/api/backend/keys", { name: "Integration", role: "admin" });
+  const asKey = { Authorization: `Bearer ${(made.body as { key: string }).key}` };
+  expect((await request.post(`${ENGINE}/api/webhooks`, { headers: asKey, data: { url: "https://elsewhere.example/tap", events: ["*"] } })).status()).toBe(403);
+
+  await row.getByRole("button", { name: "Remove" }).click();
+  await tab.getByRole("group", { name: "Remove endpoint" }).getByRole("button", { name: "Remove endpoint" }).click();
+  await expect(said("The endpoint was removed.")).toBeVisible();
+  await expect(tab.getByText("No endpoints yet")).toBeVisible();
+  await bolt.context.close();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");

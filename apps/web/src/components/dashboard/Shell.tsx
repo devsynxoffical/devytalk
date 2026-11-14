@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, Building, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, KeySquare, LayoutGrid, LogOut, Megaphone, PhoneOff, PlugZap, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Activity, Bell, Building, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, KeySquare, LayoutGrid, LogOut, Megaphone, PhoneOff, PlugZap, Search, UserRound, UsersRound, Webhook, type LucideIcon } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { campaignListSchema, jobsSchema, websiteRequestListSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
@@ -178,6 +178,7 @@ function Crumbs({ pathname }: { pathname: string }) {
   else if (parts[0] === "team") crumbs.push({ label: "Team", href: "/dashboard/team" });
   else if (parts[0] === "organization") crumbs.push({ label: "Organization", href: "/dashboard/organization" });
   else if (parts[0] === "keys") crumbs.push({ label: "API keys", href: "/dashboard/keys" });
+  else if (parts[0] === "webhooks") crumbs.push({ label: "Webhooks", href: "/dashboard/webhooks" });
   else if (parts[0] === "do-not-call") crumbs.push({ label: "Do not call", href: "/dashboard/do-not-call" });
   else if (parts[0] === "account") crumbs.push({ label: "Your account", href: "/dashboard/account" });
   else crumbs.push({ label: "Overview", href: "/dashboard" });
@@ -259,6 +260,11 @@ function AccountLinks({ me, isAdmin, className }: { me: Me | null; isAdmin: bool
       {isAdmin && (
         <Link href="/dashboard/keys" className={className}>
           <KeySquare className="size-4" aria-hidden="true" /> API keys
+        </Link>
+      )}
+      {isAdmin && (
+        <Link href="/dashboard/webhooks" className={className}>
+          <Webhook className="size-4" aria-hidden="true" /> Webhooks
         </Link>
       )}
       {me?.platform && (

@@ -98,6 +98,11 @@ Rules the dashboard keeps:
   Organizations screen), where calls are transferred and where bookings are reported.
   The webhook's signing secret can be set and replaced, never read back.
 - **API keys** for an organization's own systems: a name, a role, shown once, revocable.
+- **Webhooks**: an admin registers addresses of the organization's own systems and
+  chooses the events each receives (a call's outcome, a booked meeting, a campaign
+  stopping). The signing secret is shown once; a test delivery says how it went; each
+  endpoint lists what was sent to it and what it answered; a failed delivery can be
+  sent again. No delivery has been made to a real receiver from this code.
 - **Do not call**: the numbers an organization never calls. Add one, import a list (a
   public register, another system's suppression list), search; an admin can take a
   number off, and can erase a person on request: their details and what was said on
