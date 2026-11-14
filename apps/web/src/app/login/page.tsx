@@ -14,10 +14,10 @@ const POINTS: [string, string][] = [
 export default function LoginPage() {
   return (
     <div className="app grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-signal p-10 text-fg lg:flex">
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-line bg-sunken p-10 text-fg lg:flex">
         <Link href="/" className="flex items-center gap-2.5" aria-label="DevyTalk home">
           <span className="grid size-7 place-items-center rounded-[7px] bg-fg" aria-hidden="true">
-            <svg viewBox="0 0 24 24" className="size-4 text-signal" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+            <svg viewBox="0 0 24 24" className="size-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
               <path d="M5 12h.5M8.5 8.5v7M12 5v14M15.5 8.5v7M19 12h.5" />
             </svg>
           </span>
