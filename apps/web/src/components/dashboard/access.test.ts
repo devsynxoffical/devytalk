@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { passwordProblem } from "@/app/dashboard/team/page";
 import { accessOf, initials } from "./access";
 
-const person = (role: "viewer" | "operator" | "admin", name = "Ada Lovelace") => ({ kind: "user" as const, id: 1, email: "ada.lovelace@example.com", name, role });
+const organization = { id: 1, name: "Acme" };
+const person = (role: "viewer" | "operator" | "admin", name = "Ada Lovelace") => ({ kind: "user" as const, id: 1, email: "ada.lovelace@example.com", name, role, organization, platform: false });
+const operator = { kind: "token" as const, id: null, email: "", name: "API token", role: "admin" as const, organization, platform: true };
 
 describe("accessOf", () => {
   it("offers nothing that changes anything until the person is known", () => {
@@ -13,7 +15,7 @@ describe("accessOf", () => {
     expect(accessOf(person("viewer"))).toMatchObject({ canOperate: false, isAdmin: false });
     expect(accessOf(person("operator"))).toMatchObject({ canOperate: true, isAdmin: false });
     expect(accessOf(person("admin"))).toMatchObject({ canOperate: true, isAdmin: true });
-    expect(accessOf({ kind: "token", id: null, email: "", name: "API token", role: "admin" })).toMatchObject({ canOperate: true, isAdmin: true });
+    expect(accessOf(operator)).toMatchObject({ canOperate: true, isAdmin: true });
   });
 });
 
@@ -22,7 +24,7 @@ describe("initials", () => {
     expect(initials(person("viewer"))).toBe("AL");
     expect(initials(person("viewer", ""))).toBe("AL"); // from ada.lovelace@
     expect(initials(person("viewer", "Cher"))).toBe("C");
-    expect(initials({ kind: "token", id: null, email: "", name: "API token", role: "admin" })).toBe("API");
+    expect(initials(operator)).toBe("API");
     expect(initials(null)).toBe("");
   });
 });

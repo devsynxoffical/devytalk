@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, LayoutGrid, LogOut, Megaphone, PlugZap, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Activity, Bell, Building2, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, LayoutGrid, LogOut, Megaphone, PlugZap, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { campaignListSchema, jobsSchema, websiteRequestListSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
@@ -172,6 +172,7 @@ function Crumbs({ pathname }: { pathname: string }) {
   } else if (parts[0] === "system") crumbs.push({ label: "Background work", href: "/dashboard/system" });
   else if (parts[0] === "requests") crumbs.push({ label: "Requests", href: "/dashboard/requests" });
   else if (parts[0] === "setup") crumbs.push({ label: "Setup", href: "/dashboard/setup" });
+  else if (parts[0] === "organizations") crumbs.push({ label: "Organizations", href: "/dashboard/organizations" });
   else if (parts[0] === "team") crumbs.push({ label: "Team", href: "/dashboard/team" });
   else if (parts[0] === "account") crumbs.push({ label: "Your account", href: "/dashboard/account" });
   else crumbs.push({ label: "Overview", href: "/dashboard" });
@@ -215,7 +216,12 @@ function Identity({ me }: { me: Me | null }) {
   return (
     <>
       <p className="truncate text-[13.5px] font-semibold text-fg">{me.kind === "token" ? "Engine access token" : me.name || me.email}</p>
-      <p className="t-meta mt-0.5 truncate">{me.kind === "token" ? "The owner's credential, with full access" : me.email}</p>
+      <p className="t-meta mt-0.5 truncate">{me.kind === "token" ? "The operator's credential, with full access" : me.email}</p>
+      {me.organization.name && (
+        <p className="t-meta mt-0.5 truncate" data-testid="organization">
+          {me.organization.name === "default" ? "Default organization" : me.organization.name}
+        </p>
+      )}
       <p className="mt-1.5">
         <Status tone={me.role === "admin" ? "pos" : me.role === "operator" ? "info" : "neutral"}>{ROLE_LABEL[me.role]}</Status>
       </p>
@@ -237,6 +243,11 @@ function AccountLinks({ me, isAdmin, className }: { me: Me | null; isAdmin: bool
       {isAdmin && (
         <Link href="/dashboard/team" className={className}>
           <UsersRound className="size-4" aria-hidden="true" /> Team
+        </Link>
+      )}
+      {me?.platform && (
+        <Link href="/dashboard/organizations" className={className}>
+          <Building2 className="size-4" aria-hidden="true" /> Organizations
         </Link>
       )}
       {me?.kind === "user" && (

@@ -367,8 +367,16 @@ export const meSchema = z.object({
   email: z.string(),
   name: z.string(),
   role: roleSchema,
+  /** The only organization whose data this person can see or change. */
+  organization: z.object({ id: z.number(), name: z.string() }).default({ id: 0, name: "" }),
+  /** The operator of the deployment, who creates organizations. */
+  platform: z.boolean().default(false),
 });
 export type Me = z.infer<typeof meSchema>;
+
+export const organizationSchema = z.object({ id: z.number(), name: z.string(), created_at: z.string().nullable(), users: z.number(), active_users: z.number() });
+export const organizationListSchema = z.array(organizationSchema);
+export type Organization = z.infer<typeof organizationSchema>;
 
 export const userSchema = z.object({
   id: z.number(),
@@ -410,6 +418,8 @@ export const statusSchema = z.object({
   inbound_webhook: z.string().nullable(),
   languages: z.array(z.object({ code: z.string(), name: z.string() })),
   website_intake: z.boolean(),
+  /** Whether the database itself keeps organizations apart. */
+  row_level_security: z.enum(["enforced", "bypassed", "missing", "unavailable"]).default("unavailable"),
   default_timezone: z.string(),
 });
 export type EngineStatus = z.infer<typeof statusSchema>;

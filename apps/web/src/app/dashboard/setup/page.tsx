@@ -85,6 +85,19 @@ export default function SetupPage() {
         )}
       </Panel>
 
+      <Panel title="Separation between organizations" description="Each customer organization sees only its own campaigns, leads, calls, documents and people.">
+        <p className="text-[13.5px] text-fg-2" data-testid="isolation">
+          {
+            {
+              enforced: "Enforced twice: by the application on every request, and by the database itself (row-level security).",
+              bypassed: "Enforced by the application on every request. The database policies exist but do not bind the database role in use (a superuser, or one with BYPASSRLS): run the engine as an ordinary role to switch them on.",
+              missing: "Enforced by the application on every request. The database policies are missing: run the engine's database upgrade.",
+              unavailable: "Enforced by the application on every request. This engine runs on SQLite, which has no database-level policies: use PostgreSQL before adding a second organization.",
+            }[data.row_level_security]
+          }
+        </p>
+      </Panel>
+
       <Panel title="Website forms" description="Demo requests, messages and call-back requests from the website.">
         <p className="text-[13.5px] text-fg-2">
           {data.website_intake ? (

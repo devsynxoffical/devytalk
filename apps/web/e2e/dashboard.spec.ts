@@ -788,6 +788,55 @@ test("a campaign is created and set up in the console for outbound and inbound c
   expect(await refused.text()).not.toContain("<Stream");
 });
 
+test("a second organization is separate from the first, down to the same campaign name", async ({ browser, request }) => {
+  // The operator (signed in with the engine's token) creates a customer and its first admin.
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Account" }).click();
+  await expect(page.getByTestId("identity").getByTestId("organization")).toHaveText("Default organization");
+  await page.getByRole("link", { name: "Organizations" }).click();
+  await expect(page.getByTestId("organizations")).toContainText("Default organization");
+  await page.getByRole("button", { name: "New organization" }).click();
+  await page.getByLabel("Organization name").fill("Bolt Logistics");
+  await page.getByLabel("First admin's name").fill("Bo Ito");
+  await page.getByLabel("First admin's email").fill("bo@bolt.example");
+  await page.getByLabel("Their first password").fill("bolt first password");
+  await page.getByRole("button", { name: "Create organization" }).click();
+  await expect(toast("Bolt Logistics was created.")).toBeVisible();
+  await expect(page.getByTestId("organizations").locator("tr", { hasText: "Bolt Logistics" })).toContainText("1 active of 1");
+
+  // Its admin signs in to an empty console: none of the first organization's campaigns, people or requests.
+  const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
+  await bolt.tab.goto("/dashboard");
+  await expect(bolt.tab.getByText("No campaigns yet")).toBeVisible();
+  await bolt.tab.getByRole("button", { name: "Account" }).click();
+  await expect(bolt.tab.getByTestId("identity").getByTestId("organization")).toHaveText("Bolt Logistics");
+  await expect(bolt.tab.getByRole("link", { name: "Organizations" })).toHaveCount(0);
+  await bolt.tab.goto(`/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}`);
+  await expect(bolt.tab.getByRole("alert").filter({ hasText: "not found" })).toBeVisible(); // somebody else's campaign does not exist here
+  await bolt.tab.goto("/dashboard/team");
+  await expect(bolt.tab.getByTestId("team")).toContainText("bo@bolt.example");
+  await expect(bolt.tab.getByTestId("team")).not.toContainText("example.test"); // the first organization's people
+  await bolt.tab.goto("/dashboard/organizations");
+  await expect(bolt.tab.getByRole("alert").filter({ hasText: "Only the operator of this deployment manages organizations" })).toBeVisible();
+  for (const path of ["campaigns", "users", "requests", "jobs", "timeline"]) {
+    const answer = await fromPage(bolt.tab, "GET", `/api/backend/${path}`);
+    expect(JSON.stringify(answer.body), path).not.toMatch(/Accounting|Dental|Law firms|example\.test|northwind/);
+  }
+  expect((await fromPage(bolt.tab, "GET", "/api/backend/calls/1")).status).toBe(404);
+
+  // It may use a campaign name the first organization already has, and the two stay apart.
+  await bolt.tab.goto("/dashboard/campaigns/new");
+  await bolt.tab.getByLabel("Campaign name").fill(ACCOUNTING);
+  await bolt.tab.getByLabel("Company name").fill("Bolt Logistics");
+  await bolt.tab.getByLabel("What the agent offers").fill("Same-day delivery for local shops.");
+  await bolt.tab.getByRole("button", { name: "Create campaign" }).click();
+  await expect(bolt.tab.getByRole("heading", { name: ACCOUNTING, level: 1 })).toBeVisible();
+  await expect(bolt.tab.getByTestId("getting-started")).toContainText("Import the people to call"); // its own, with no leads
+  await page.goto(`/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}/leads`);
+  await expect(page.getByTestId("lead-count")).toHaveText("80 leads"); // the first organization's campaign is untouched
+  await bolt.context.close();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");
