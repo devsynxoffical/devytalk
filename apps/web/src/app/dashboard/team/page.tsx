@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { UserPlus } from "lucide-react";
+import { Link2, UserPlus } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
-import { roleSchema, userListSchema, userSchema, type Role, type User } from "@/lib/api/schemas";
+import { newInvitationSchema, roleSchema, userListSchema, userSchema, type Role, type User } from "@/lib/api/schemas";
+import { InvitationList, InvitePerson, LinkBanner, inviteLink, type FreshLink } from "./Invitations";
 import { ROLE_LABEL, ROLE_SUMMARY, useAccess } from "@/components/dashboard/access";
 import { Banner, Button, Confirm, DataTable, EmptyState, ErrorState, Field, Input, Loading, NoticeBar, PageHeader, Panel, Select, Status, type Column, type Notice } from "@/components/dashboard/ui";
 
@@ -49,7 +50,7 @@ function AddPerson({ onAdded, onClose }: { onAdded: (notice: Notice) => void; on
   }
 
   return (
-    <Panel title="Add a person" description="They sign in with this email and the password you set, and can change the password afterwards.">
+    <Panel title="Add a person with a password" description="For when a link cannot be sent. They sign in with this email and the password you set, and should change it afterwards. Otherwise invite them: then nobody but them knows their password.">
       <form onSubmit={add} className="grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0" noValidate>
         <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" maxLength={200} />
@@ -95,6 +96,9 @@ export default function TeamPage() {
   const [notice, setNotice] = useState<Notice>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
   const [adding, setAdding] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [fresh, setFresh] = useState<FreshLink | null>(null);
+  const [invitations, setInvitations] = useState(0); // counts links made here, so the list reads again
   const [pending, setPending] = useState<Pending | null>(null);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -114,6 +118,18 @@ export default function TeamPage() {
       const text = sentence(failure(e));
       if (pending) setProblem(text);
       else setNotice({ kind: "error", text });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetLink(user: User) {
+    setBusy(true);
+    try {
+      const made = await apiRequest(backendUrl(["users", user.id, "reset-link"]), newInvitationSchema, { method: "POST" });
+      setFresh({ email: user.email, link: inviteLink(window.location.origin, made.token), purpose: "reset" });
+    } catch (e) {
+      setNotice({ kind: "error", text: sentence(failure(e)) });
     } finally {
       setBusy(false);
     }
@@ -172,6 +188,11 @@ export default function TeamPage() {
         own(u) ? null : (
           <span className="flex flex-wrap justify-end gap-1.5">
             {u.active && (
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => resetLink(u)} aria-label={`Make a reset link for ${u.email}`}>
+                Reset link
+              </Button>
+            )}
+            {u.active && (
               <Button size="sm" variant="ghost" onClick={() => (setProblem(null), setPassword(""), setPending({ user: u, action: "password" }))}>
                 Reset password
               </Button>
@@ -191,14 +212,22 @@ export default function TeamPage() {
         title="Team"
         description="Who can sign in to this console, and what each person may do."
         actions={
-          isAdmin && !adding ? (
-            <Button variant="primary" onClick={() => setAdding(true)}>
-              <UserPlus className="size-3.5" aria-hidden="true" />
-              Add a person
-            </Button>
+          isAdmin && !adding && !inviting ? (
+            <>
+              <Button onClick={() => setAdding(true)}>
+                <UserPlus className="size-3.5" aria-hidden="true" />
+                Add a person
+              </Button>
+              <Button variant="primary" onClick={() => setInviting(true)}>
+                <Link2 className="size-3.5" aria-hidden="true" />
+                Invite by link
+              </Button>
+            </>
           ) : undefined
         }
       />
+      {fresh && <LinkBanner fresh={fresh} onDone={() => setFresh(null)} />}
+      {inviting && <InvitePerson onInvited={(link) => (setFresh(link), setInvitations((n) => n + 1))} onClose={() => setInviting(false)} />}
       {adding && <AddPerson onAdded={changed} onClose={() => setAdding(false)} />}
 
       {loading && !data ? (
@@ -254,6 +283,8 @@ export default function TeamPage() {
           <DataTable columns={columns} rows={data} rowKey={(u) => u.id} caption="People with an account" testId="team" />
         </Panel>
       ) : null}
+
+      {isAdmin && data && <InvitationList version={invitations} onChanged={(text) => changed({ kind: "success", text })} />}
 
       <Panel title="What each role may do">
         <dl className="divide-y divide-line">

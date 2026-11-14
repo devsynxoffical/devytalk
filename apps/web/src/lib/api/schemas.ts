@@ -512,3 +512,19 @@ export const webhookDeliverySchema = z.object({
 export type WebhookDelivery = z.infer<typeof webhookDeliverySchema>;
 export const webhookDeliveryListSchema = z.array(webhookDeliverySchema);
 
+export const invitationSchema = z.object({
+  id: z.number(),
+  purpose: z.enum(["join", "reset"]),
+  email: z.string(),
+  name: z.string().default(""),
+  role: roleSchema,
+  state: z.enum(["pending", "accepted", "withdrawn", "expired"]),
+  created_by: z.string().default(""),
+  created_at: z.string().nullable().default(null),
+  expires_at: z.string().nullable().default(null),
+});
+export type Invitation = z.infer<typeof invitationSchema>;
+export const invitationListSchema = z.array(invitationSchema);
+/** The answer to making a link: the only time its token is sent. */
+export const newInvitationSchema = invitationSchema.extend({ token: z.string() });
+

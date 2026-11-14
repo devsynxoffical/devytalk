@@ -98,6 +98,11 @@ Rules the dashboard keeps:
   Organizations screen), where calls are transferred and where bookings are reported.
   The webhook's signing secret can be set and replaced, never read back.
 - **API keys** for an organization's own systems: a name, a role, shown once, revocable.
+- **Invitations**: on the Team screen an admin makes a one-time link for a person
+  and passes it on; at `/invite/…` the person chooses their own password and is
+  signed in. The same kind of link resets a forgotten password and signs the account
+  out everywhere else. No email is sent. The session from a link goes into the same
+  httpOnly cookie as any sign-in; a link cannot be used through the dashboard proxy.
 - **Webhooks**: an admin registers addresses of the organization's own systems and
   chooses the events each receives (a call's outcome, a booked meeting, a campaign
   stopping). The signing secret is shown once; a test delivery says how it went; each

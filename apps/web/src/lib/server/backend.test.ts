@@ -18,6 +18,8 @@ describe("enginePath", () => {
 
   it("does not let page scripts sign in through the proxy and read the session token", () => {
     expect(enginePath(["auth", "login"])).toBeNull();
+    expect(enginePath(["auth", "invitations", "dti_abc"])).toBeNull(); // using a one-time link answers with a session too
+    expect(enginePath(["invitations"])).toBe("/api/invitations"); // making one is an ordinary admin request
     expect(enginePath(["auth", "me"])).toBe("/api/auth/me");
     expect(enginePath(Array(13).fill("a"))).toBeNull();
   });

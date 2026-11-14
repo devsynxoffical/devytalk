@@ -41,9 +41,10 @@ export function enginePath(segments: string[]): string | null {
   for (const segment of segments) {
     if (!segment || segment === "." || segment === ".." || segment.includes("/") || segment.includes("\\")) return null;
   }
-  // Signing in answers with a session token. It goes through /api/session, which keeps
-  // the token in an httpOnly cookie; through this proxy it would reach page scripts.
-  if (segments[0] === "auth" && segments[1] === "login") return null;
+  // Signing in, and using a one-time link, answer with a session token. They go through
+  // /api/session, which keeps the token in an httpOnly cookie; through this proxy it
+  // would reach page scripts.
+  if (segments[0] === "auth" && (segments[1] === "login" || segments[1] === "invitations")) return null;
   return "/api/" + segments.map(encodeURIComponent).join("/");
 }
 

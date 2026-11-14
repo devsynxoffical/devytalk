@@ -1047,6 +1047,90 @@ test("an organization has its own systems told about calls and bookings, at addr
   await bolt.context.close();
 });
 
+test("a person joins by a link and chooses their own password; a reset link gets them back in", async ({ browser, request }) => {
+  const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
+  const admin = bolt.tab;
+  const said = (text: string) => admin.getByRole("status").filter({ hasText: text });
+  await admin.goto("/dashboard/team");
+
+  // The admin makes a link. Nobody types a password for anyone else.
+  await admin.getByRole("button", { name: "Invite by link" }).click();
+  await admin.getByLabel("Their name").fill("Nia");
+  await admin.getByLabel("Their email").fill("nia@bolt.example");
+  await admin.getByLabel("Role").selectOption("viewer");
+  await admin.getByRole("button", { name: "Make invitation link" }).click();
+  const link = (await admin.getByTestId("invite-link").getByTestId("copy-value").textContent()) ?? "";
+  expect(link).toMatch(/\/invite\/dti_[\w-]+$/);
+  await admin.getByRole("button", { name: "I have copied it" }).click();
+  await expect(admin.getByTestId("invitations")).toContainText("nia@bolt.example");
+  await expect(admin.getByTestId("invitations")).toContainText("Waiting");
+  expect(JSON.stringify((await fromPage(admin, "GET", "/api/backend/invitations")).body)).not.toContain(link.split("/").pop());
+
+  // The person opens it without being signed in, and chooses a password.
+  const visitor = await browser.newContext();
+  const nia = await visitor.newPage();
+  await nia.goto(link);
+  await expect(nia.getByRole("heading", { name: "Join Bolt Logistics" })).toBeVisible();
+  await expect(nia.getByText("You were invited as a viewer.")).toBeVisible();
+  await expect(nia.getByLabel("Your name")).toHaveValue("Nia");
+  await nia.getByLabel("Choose a password").fill("nia chose this herself");
+  await nia.getByLabel("The same password again").fill("nia chose something else");
+  await nia.getByRole("button", { name: "Create my account" }).click();
+  await expect(nia.getByRole("alert").filter({ hasText: "The two passwords are not the same." })).toBeVisible();
+  await nia.getByLabel("The same password again").fill("nia chose this herself");
+  await nia.getByRole("button", { name: "Create my account" }).click();
+  await nia.waitForURL("**/dashboard");
+  await nia.getByRole("button", { name: "Account" }).click();
+  await expect(nia.getByTestId("identity")).toContainText("nia@bolt.example");
+  await expect(nia.getByTestId("identity").getByTestId("organization")).toHaveText("Bolt Logistics");
+  await expect(nia.getByRole("link", { name: "Team" })).toHaveCount(0); // a viewer
+  // The session is in the cookie page scripts cannot read, and a link cannot be used through the proxy to get one.
+  expect(await nia.evaluate(() => document.cookie)).not.toContain("dt_session");
+  expect((await fromPage(nia, "POST", "/api/backend/auth/invitations/dti_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", { password: "another long password" })).status).toBe(404);
+
+  // Used once, the link is gone.
+  const second = await browser.newContext();
+  const again = await second.newPage();
+  await again.goto(link);
+  await expect(again.getByRole("heading", { name: "This link does not work any more" })).toBeVisible();
+  await second.close();
+  await admin.reload();
+  await expect(admin.getByTestId("invitations")).toContainText("Joined");
+  await expect(admin.getByTestId("team")).toContainText("nia@bolt.example");
+
+  // She forgets the password: the admin makes a reset link. Using it signs her out everywhere else.
+  await admin.getByRole("button", { name: "Make a reset link for nia@bolt.example" }).click();
+  const reset = (await admin.getByTestId("invite-link").getByTestId("copy-value").textContent()) ?? "";
+  await expect(admin.getByTestId("invite-link")).toContainText("Send this reset link to nia@bolt.example");
+  const elsewhere = await browser.newContext();
+  const phone = await elsewhere.newPage();
+  await phone.goto(reset);
+  await expect(phone.getByRole("heading", { name: "Choose a new password" })).toBeVisible();
+  await phone.getByLabel("New password").fill("a password nia will remember");
+  await phone.getByLabel("The same password again").fill("a password nia will remember");
+  await phone.getByRole("button", { name: "Set password and sign in" }).click();
+  await phone.waitForURL("**/dashboard");
+  expect((await fromPage(nia, "GET", "/api/backend/auth/me")).status).toBe(401); // the earlier sign-in is over
+  expect((await engineSignIn(request, "nia@bolt.example", "a password nia will remember")).token).toBeTruthy();
+  await elsewhere.close();
+  await visitor.close();
+
+  // An invitation can be withdrawn before anyone uses it.
+  await admin.getByRole("button", { name: "I have copied it" }).click();
+  await admin.getByRole("button", { name: "Invite by link" }).click();
+  await admin.getByLabel("Their email").fill("late@bolt.example");
+  await admin.getByRole("button", { name: "Make invitation link" }).click();
+  const withdrawn = (await admin.getByTestId("invite-link").getByTestId("copy-value").textContent()) ?? "";
+  await admin.getByRole("button", { name: "Withdraw the invitation for late@bolt.example" }).click();
+  await expect(said("The invitation for late@bolt.example was withdrawn.")).toBeVisible();
+  const third = await browser.newContext();
+  const late = await third.newPage();
+  await late.goto(withdrawn);
+  await expect(late.getByRole("heading", { name: "This link does not work any more" })).toBeVisible();
+  await third.close();
+  await bolt.context.close();
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");
