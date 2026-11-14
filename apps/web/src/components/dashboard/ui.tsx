@@ -262,11 +262,14 @@ const CONTROL =
 
 export function Field({ label, hint, error, children, className }: { label: string; hint?: ReactNode; error?: string | null; children: ReactNode; className?: string }) {
   return (
-    <label className={cn("block", className)}>
-      <span className="mb-1 block text-[12.5px] font-medium text-fg-2">{label}</span>
-      {children}
-      {error ? <span role="alert" className="mt-1 block text-[12px] font-medium text-crit">{error}</span> : hint ? <span className="t-meta mt-1 block">{hint}</span> : null}
-    </label>
+    <div className={className}>
+      {/* Help and error text sit outside the label, so the field's name is its label alone. */}
+      <label className="block">
+        <span className="mb-1 block text-[12.5px] font-medium text-fg-2">{label}</span>
+        {children}
+      </label>
+      {error ? <p role="alert" className="mt-1 text-[12px] font-medium text-crit">{error}</p> : hint ? <p className="t-meta mt-1">{hint}</p> : null}
+    </div>
   );
 }
 

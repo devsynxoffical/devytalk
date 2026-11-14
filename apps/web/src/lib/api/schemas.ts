@@ -351,3 +351,29 @@ export const leadImportSchema = z.object({
   samples_invalid: z.array(z.string()),
 });
 export type LeadImport = z.infer<typeof leadImportSchema>;
+
+/* ---- accounts ---- */
+
+export const roleSchema = z.enum(["viewer", "operator", "admin"]);
+export type Role = z.infer<typeof roleSchema>;
+
+export const meSchema = z.object({
+  kind: z.enum(["token", "user"]),
+  id: z.number().nullable(),
+  email: z.string(),
+  name: z.string(),
+  role: roleSchema,
+});
+export type Me = z.infer<typeof meSchema>;
+
+export const userSchema = z.object({
+  id: z.number(),
+  email: z.string(),
+  name: z.string(),
+  role: roleSchema,
+  active: z.boolean(),
+  created_at: z.string().nullable(),
+  last_login_at: z.string().nullable(),
+});
+export const userListSchema = z.array(userSchema);
+export type User = z.infer<typeof userSchema>;

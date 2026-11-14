@@ -34,7 +34,7 @@ export default function LoginPage() {
             ))}
           </ul>
         </div>
-        <p className="text-[12px] text-white/55">Access is limited to operators of this calling engine.</p>
+        <p className="text-[12px] text-white/55">Access is limited to people with an account on this calling engine.</p>
       </aside>
 
       <main className="flex items-center justify-center px-5 py-12 pt-safe">
@@ -45,7 +45,7 @@ export default function LoginPage() {
             </svg>
           </span>
           <h1 className="t-title text-fg">Sign in</h1>
-          <p className="mt-1 text-[13.5px] text-fg-2">Open the DevyTalk console with your engine&apos;s access token.</p>
+          <p className="mt-1 text-[13.5px] text-fg-2">Open the DevyTalk console.</p>
           <Suspense fallback={null}>
             <LoginForm />
           </Suspense>

@@ -8,6 +8,7 @@ import { callDetailSchema, callListSchema, dialResultSchema, type CallDetail, ty
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { Banner, Button, Confirm, Drawer, EmptyState, ErrorState, Field, Input, Loading, NoticeBar, Panel, Segmented, Skeleton, Status, Tag, type Notice } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
+import { useAccess } from "@/components/dashboard/access";
 
 const ACTIVE = new Set(["created", "queued", "initiated", "ringing", "in-progress"]);
 const CONVERTED = new Set(["meeting_booked", "sale_closed"]);
@@ -266,6 +267,7 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
   const [show, setShow] = useState<Show>("all");
   const [notice, setNotice] = useState<Notice>(null);
   const wide = useMediaQuery("(min-width: 1024px)");
+  const { canOperate } = useAccess();
   const closeNotice = useCallback(() => setNotice(null), []);
   const closeDetail = useCallback(() => setSelected(null), []);
 
@@ -283,13 +285,15 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
   return (
     <div className="space-y-5">
       <NoticeBar notice={notice} onClose={closeNotice} />
-      <DialForm
-        campaign={name}
-        onPlaced={(n) => {
-          setNotice(n);
-          reload();
-        }}
-      />
+      {canOperate && (
+        <DialForm
+          campaign={name}
+          onPlaced={(n) => {
+            setNotice(n);
+            reload();
+          }}
+        />
+      )}
 
       {loading && !data ? (
         <Loading what="Loading calls" strip={false} rows={8} />

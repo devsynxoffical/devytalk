@@ -14,6 +14,11 @@ describe("enginePath", () => {
     expect(enginePath(["campaigns", "a/../../ws"])).toBeNull();
     expect(enginePath(["campaigns", "a\\b"])).toBeNull();
     expect(enginePath(["campaigns", ""])).toBeNull();
+  });
+
+  it("does not let page scripts sign in through the proxy and read the session token", () => {
+    expect(enginePath(["auth", "login"])).toBeNull();
+    expect(enginePath(["auth", "me"])).toBe("/api/auth/me");
     expect(enginePath(Array(13).fill("a"))).toBeNull();
   });
 });

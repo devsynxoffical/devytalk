@@ -8,12 +8,15 @@
  * (aicallingagent/tests/seed_dashboard.py) and are counted by the engine itself.
  * Tests run in order and change data, so they need a freshly seeded engine.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 
 const TOKEN = process.env.E2E_API_TOKEN ?? "e2e-test-token";
 const ACCOUNTING = "Accounting firms Q4";
 const DENTAL = "Dental clinics pilot";
 const EMPTY = "Law firms (not started)";
+
+const ENGINE = process.env.DEVYTALK_API_URL ?? `http://127.0.0.1:${process.env.ENGINE_PORT ?? 8010}`;
+const PASSWORD = "e2e-test-password"; // the engine's test fixtures create one account per role with it
 
 test.describe.configure({ mode: "serial" });
 
@@ -25,6 +28,30 @@ test.beforeAll(async ({ browser }) => {
 test.afterAll(async () => {
   await page.context().close();
 });
+
+/** A session token from the engine, for an account in the test fixtures. */
+async function engineSignIn(request: APIRequestContext, email: string, password = PASSWORD) {
+  const response = await request.post(`${ENGINE}/api/auth/login`, { data: { email, password } });
+  return { status: response.status(), token: response.ok() ? ((await response.json()) as { token: string }).token : "" };
+}
+
+/** A browser signed in as that account, the way the console's own sign-in leaves it. */
+async function signedInAs(browser: Browser, request: APIRequestContext, email: string, password = PASSWORD) {
+  const { token } = await engineSignIn(request, email, password);
+  const context = await browser.newContext();
+  await context.addCookies([{ name: "dt_session", value: token, domain: "localhost", path: "/", httpOnly: true, sameSite: "Strict" }]);
+  return { context, tab: await context.newPage(), token };
+}
+
+/** A request made by the page itself, as a script on the console would make it. */
+const fromPage = (tab: Page, method: string, url: string, body?: unknown) =>
+  tab.evaluate(
+    async ([m, u, b]) => {
+      const response = await fetch(u as string, { method: m as string, headers: b ? { "Content-Type": "application/json" } : undefined, body: b ? JSON.stringify(b) : undefined });
+      return { status: response.status, body: (await response.json().catch(() => null)) as { detail?: string } | null };
+    },
+    [method, url, body] as const,
+  );
 
 /** An error message on the page (Next.js keeps an empty role="alert" element of its own). */
 const alertWith = (text: string) => page.getByRole("alert").filter({ hasText: text });
@@ -44,6 +71,7 @@ test("the console is closed to visitors who are not signed in", async () => {
   await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
   expect((await page.request.get("/api/backend/campaigns")).status()).toBe(401);
 
+  await page.getByRole("button", { name: "Use the engine's access token" }).click();
   await page.getByLabel("Access token").fill("not-the-right-token");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(alertWith("That access token was not accepted.")).toBeVisible();
@@ -52,6 +80,7 @@ test("the console is closed to visitors who are not signed in", async () => {
 
 test("signing in keeps the token away from page scripts and lists the campaigns", async () => {
   await page.goto("/login");
+  await page.getByRole("button", { name: "Use the engine's access token" }).click();
   await page.getByLabel("Access token").fill(TOKEN);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
@@ -469,6 +498,113 @@ test("leads are imported from a sheet, with duplicates and bad numbers reported"
 
   await page.getByLabel("Choose a lead sheet to import").setInputFiles({ name: "leads.pdf", mimeType: "application/pdf", buffer: Buffer.from("x") });
   await expect(alertWith("Choose a CSV or Excel file.")).toBeVisible();
+});
+
+test("people sign in with their own account, and an admin manages the team", async ({ browser, request }) => {
+  const context = await browser.newContext();
+  const tab = await context.newPage();
+  const say = (text: string) => tab.getByRole("status").filter({ hasText: text });
+  await tab.goto("/login");
+  await tab.getByLabel("Email").fill("admin@example.test");
+  await tab.getByLabel("Password").fill("not the password");
+  await tab.getByRole("button", { name: "Sign in" }).click();
+  await expect(tab.getByRole("alert").filter({ hasText: "Email or password is incorrect." })).toBeVisible();
+  await tab.getByLabel("Password").fill(PASSWORD);
+  await tab.getByRole("button", { name: "Sign in" }).click();
+  await expect(tab.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+
+  // The session is the engine's, kept where page scripts cannot read it, and cannot be fetched through the proxy.
+  const session = (await context.cookies()).find((c) => c.name === "dt_session");
+  expect(session?.httpOnly).toBe(true);
+  expect(session?.value.startsWith("dts_")).toBe(true);
+  expect((await fromPage(tab, "POST", "/api/backend/auth/login", { email: "admin@example.test", password: PASSWORD })).status).toBe(404);
+
+  await tab.getByRole("button", { name: "Account" }).click();
+  await expect(tab.getByTestId("identity")).toContainText("Test Admin");
+  await expect(tab.getByTestId("identity")).toContainText("admin@example.test");
+  await tab.getByRole("link", { name: "Team" }).click();
+  const team = tab.getByTestId("team");
+  for (const email of ["admin@example.test", "operator@example.test", "viewer@example.test"]) await expect(team).toContainText(email);
+  const own = team.locator("tr", { hasText: "admin@example.test" });
+  await expect(own).toContainText("(you)");
+  await expect(own.getByRole("button")).toHaveCount(0); // nobody deactivates or demotes themselves
+
+  // Add a person; a weak password is refused before it is sent.
+  await tab.getByRole("button", { name: "Add a person" }).click();
+  await tab.getByLabel("Name", { exact: true }).fill("Noor Rahman");
+  await tab.getByLabel("Email", { exact: true }).fill("noor@example.test");
+  await tab.locator("section", { has: tab.getByRole("heading", { name: "Add a person" }) }).getByRole("combobox").selectOption("viewer");
+  await tab.getByLabel("First password").fill("short");
+  await tab.getByRole("button", { name: "Add person" }).click();
+  await expect(tab.getByRole("alert").filter({ hasText: "Use at least 10 characters." })).toBeVisible();
+  await tab.getByLabel("First password").fill("noor first password");
+  await tab.getByRole("button", { name: "Add person" }).click();
+  await expect(say("noor@example.test can now sign in as viewer.")).toBeVisible();
+
+  await team.getByLabel("Role of noor@example.test").selectOption("operator");
+  await expect(say("noor@example.test is now operator.")).toBeVisible();
+
+  // Noor changes her own password; the old one stops working.
+  const noor = await signedInAs(browser, request, "noor@example.test", "noor first password");
+  await noor.tab.goto("/dashboard/account");
+  await expect(noor.tab.getByText("Operator. Also runs campaigns")).toBeVisible();
+  await noor.tab.getByLabel("Current password").fill("noor first password");
+  await noor.tab.getByLabel("New password", { exact: true }).fill("noor second password");
+  await noor.tab.getByLabel("New password again").fill("noor second password");
+  await noor.tab.getByRole("button", { name: "Change password" }).click();
+  await expect(noor.tab.getByRole("status").filter({ hasText: "Your password was changed" })).toBeVisible();
+  expect((await engineSignIn(request, "noor@example.test", "noor first password")).status).toBe(401);
+  expect((await engineSignIn(request, "noor@example.test", "noor second password")).status).toBe(200);
+
+  // Deactivating her signs her out at once.
+  await team.locator("tr", { hasText: "noor@example.test" }).getByRole("button", { name: "Deactivate" }).click();
+  await tab.getByRole("group", { name: "Deactivate noor@example.test" }).getByRole("button", { name: "Deactivate" }).click();
+  await expect(say("noor@example.test can no longer sign in")).toBeVisible();
+  await expect(team.locator("tr", { hasText: "noor@example.test" })).toContainText("Deactivated");
+  await noor.tab.goto("/dashboard/account");
+  await expect(noor.tab).toHaveURL(/\/login/);
+  expect((await engineSignIn(request, "noor@example.test", "noor second password")).status).toBe(401);
+  await noor.context.close();
+  await context.close();
+});
+
+test("each role is offered only what it may do, and the engine refuses the rest", async ({ browser, request }) => {
+  const campaign = `/dashboard/campaigns/${encodeURIComponent(ACCOUNTING)}`;
+  const api = `/api/backend/campaigns/${encodeURIComponent(ACCOUNTING)}`;
+
+  const viewer = await signedInAs(browser, request, "viewer@example.test");
+  await viewer.tab.goto(campaign);
+  await expect(viewer.tab.getByTestId("pause-reason")).toBeVisible(); // reads everything
+  await expect(viewer.tab.getByRole("button", { name: "Start dialing" })).toHaveCount(0);
+  await viewer.tab.goto(`${campaign}/leads`);
+  await expect(viewer.tab.getByTestId("lead-count")).toBeVisible();
+  await expect(viewer.tab.getByRole("button", { name: "Import leads" })).toHaveCount(0);
+  await viewer.tab.goto(`${campaign}/playbook`);
+  await expect(viewer.tab.getByText(/Only an admin can (approve or reject|roll back to) this version\./).first()).toBeVisible();
+  await expect(viewer.tab.getByRole("button", { name: "Ask the coach for improvements" })).toHaveCount(0);
+  await viewer.tab.goto(`${campaign}/settings`);
+  await expect(viewer.tab.getByText("Only an admin can change calling rules and budgets.")).toBeVisible();
+  await expect(viewer.tab.getByLabel("Attempts per lead")).toBeDisabled();
+  await expect(viewer.tab.getByRole("button", { name: "Save rules" })).toHaveCount(0);
+  await viewer.tab.goto("/dashboard/team");
+  await expect(viewer.tab.getByRole("alert").filter({ hasText: "Only an admin can see and manage the team" })).toBeVisible();
+  // Hiding a button is a courtesy. The engine is what refuses.
+  expect(await fromPage(viewer.tab, "POST", `${api}/pause`)).toEqual({ status: 403, body: { detail: "your role (viewer) cannot do this; it needs the operator role" } });
+  expect((await fromPage(viewer.tab, "GET", "/api/backend/users")).status).toBe(403);
+  await viewer.context.close();
+
+  const operator = await signedInAs(browser, request, "operator@example.test");
+  await operator.tab.goto(campaign);
+  await expect(operator.tab.getByRole("button", { name: "Start dialing" })).toBeVisible();
+  await operator.tab.goto(`${campaign}/playbook`);
+  await expect(operator.tab.getByRole("button", { name: "Ask the coach for improvements" })).toBeVisible();
+  await expect(operator.tab.getByText(/Only an admin can (approve or reject|roll back to) this version\./).first()).toBeVisible();
+  await expect(operator.tab.getByRole("button", { name: /Approve and publish|Roll back to version/ })).toHaveCount(0);
+  expect((await fromPage(operator.tab, "POST", `${api}/versions/3/approve`, {})).body?.detail).toBe("your role (operator) cannot do this; it needs the admin role");
+  expect((await fromPage(operator.tab, "POST", `${api}/pause`)).status).toBe(200);
+  await operator.tab.getByRole("button", { name: "Account" }).click();
+  await expect(operator.tab.getByRole("link", { name: "Team" })).toHaveCount(0);
+  await operator.context.close();
 });
 
 test("errors from the engine are shown with a way to retry", async () => {

@@ -7,6 +7,7 @@ import { DASH, count, dateTime, percent } from "@/lib/api/format";
 import { experimentListSchema, experimentSchema, versionListSchema, type Arm, type Experiment, type Version } from "@/lib/api/schemas";
 import { Button, Confirm, DataTable, EmptyState, ErrorState, Field, Input, Loading, Meter, NoticeBar, Panel, Select, Status, Tag, type Column, type Notice, type Tone } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
+import { useAccess } from "@/components/dashboard/access";
 
 const VERDICT: Record<Experiment["verdict"], { text: string; tone: Tone }> = {
   collecting: { text: "Too early to compare", tone: "warn" },
@@ -60,6 +61,7 @@ function RunningTest({ campaign, test, onChanged }: { campaign: string; test: Ex
   const [error, setError] = useState<string | null>(null);
   const verdict = VERDICT[test.verdict];
   const canPromote = test.verdict === "variant_ahead";
+  const { canOperate, isAdmin } = useAccess();
 
   async function end(action: "stop" | "promote") {
     setBusy(true);
@@ -88,12 +90,17 @@ function RunningTest({ campaign, test, onChanged }: { campaign: string; test: Ex
         {confirm === null ? (
           <>
             <div className="flex flex-wrap gap-2">
-              <Button variant="primary" disabled={!canPromote} onClick={() => setConfirm("promote")}>
-                Make version {test.variant.version} live
-              </Button>
-              <Button variant="danger" onClick={() => setConfirm("stop")}>
-                Stop the test
-              </Button>
+              {isAdmin && (
+                <Button variant="primary" disabled={!canPromote} onClick={() => setConfirm("promote")}>
+                  Make version {test.variant.version} live
+                </Button>
+              )}
+              {canOperate && (
+                <Button variant="danger" onClick={() => setConfirm("stop")}>
+                  Stop the test
+                </Button>
+              )}
+              {!isAdmin && <p className="t-meta self-center">Only an admin can make the new version live.</p>}
             </div>
             {!canPromote && (
               <p className="t-meta mt-2 max-w-2xl">
@@ -208,6 +215,7 @@ export default function ExperimentsPage({ params }: { params: Promise<{ name: st
   const versions = useApi(backendUrl(["campaigns", name, "versions"]), versionListSchema);
   const [notice, setNotice] = useState<Notice>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
+  const { canOperate } = useAccess();
 
   if ((tests.loading && !tests.data) || (versions.loading && !versions.data)) return <Loading what="Loading A/B tests" strip={false} rows={4} />;
   if (tests.error) return <ErrorState message={tests.error.message} onRetry={tests.reload} />;
@@ -262,7 +270,7 @@ export default function ExperimentsPage({ params }: { params: Promise<{ name: st
   return (
     <div className="space-y-5">
       <NoticeBar notice={notice} onClose={closeNotice} />
-      {running ? <RunningTest campaign={name} test={running} onChanged={changed} /> : <StartForm campaign={name} candidates={candidates} liveVersion={live} onStarted={changed} />}
+      {running ? <RunningTest campaign={name} test={running} onChanged={changed} /> : canOperate ? <StartForm campaign={name} candidates={candidates} liveVersion={live} onStarted={changed} /> : <EmptyState title="No test is running">An operator or admin can start one.</EmptyState>}
       {ended.length > 0 && (
         <Panel title="Earlier tests" description="Counted per lead. A lead who was called three times counts once." flush>
           <DataTable columns={columns} rows={ended} rowKey={(t) => t.id} caption="Earlier tests" />

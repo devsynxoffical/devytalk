@@ -9,6 +9,7 @@ import { count, languageName } from "@/lib/api/format";
 import { campaignSchema } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
 import { campaignTone } from "./Shell";
+import { useAccess } from "./access";
 import { Button, Confirm, Skeleton, Status } from "./ui";
 
 const TABS = [
@@ -26,6 +27,7 @@ export function CampaignHeader({ name }: { name: string }) {
   const pathname = usePathname();
   const base = `/dashboard/campaigns/${encodeURIComponent(name)}`;
   const { data, reload } = useApi(backendUrl(["campaigns", name]), campaignSchema);
+  const { canOperate } = useAccess();
   const [asking, setAsking] = useState<"start" | "pause" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export function CampaignHeader({ name }: { name: string }) {
             )}
           </div>
         </div>
-        {data && asking === null && (
+        {data && asking === null && canOperate && (
           <div className="flex gap-2">
             {data.running ? (
               <Button onClick={() => setAsking("pause")}>

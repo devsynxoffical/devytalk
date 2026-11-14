@@ -6,6 +6,7 @@ import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
 import { coachResultSchema, versionDiffSchema, versionListSchema, versionSchema, type CoachResult, type Version } from "@/lib/api/schemas";
 import { Banner, Button, Confirm, EmptyState, ErrorState, Field, Loading, NoticeBar, Panel, Skeleton, Status, Textarea, type Notice, type Tone } from "@/components/dashboard/ui";
+import { useAccess } from "@/components/dashboard/access";
 
 const STATE: Record<Version["status"], { text: string; tone: Tone }> = {
   active: { text: "Live", tone: "pos" },
@@ -78,6 +79,7 @@ function VersionPanel({ campaign, version, onChanged }: { campaign: string; vers
   const state = STATE[version.status];
   const blocked = version.blocking_questions.length > 0;
   const rollback = version.status === "archived";
+  const { isAdmin } = useAccess();
   const cancel = () => (setPending(null), setError(null));
 
   async function decide(action: "approve" | "reject") {
@@ -146,7 +148,9 @@ function VersionPanel({ campaign, version, onChanged }: { campaign: string; vers
 
         {showDiff && <Diff campaign={campaign} version={version.version} />}
 
+        {(version.status === "draft" || rollback) && !isAdmin && <p className="t-meta">Only an admin can {rollback ? "roll back to this version" : "approve or reject this version"}.</p>}
         {(version.status === "draft" || rollback) &&
+          isAdmin &&
           (pending === null ? (
             <div className="flex flex-wrap gap-2">
               <Button variant="primary" disabled={blocked} onClick={() => setPending("approve")}>
@@ -241,6 +245,7 @@ export default function PlaybookPage({ params }: { params: Promise<{ name: strin
   const [notice, setNotice] = useState<Notice>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
   const changed = (n: Notice) => (setNotice(n), reload());
+  const { canOperate } = useAccess();
 
   const drafts = data?.filter((v) => v.status === "draft") ?? [];
   const live = data?.find((v) => v.status === "active");
@@ -249,7 +254,7 @@ export default function PlaybookPage({ params }: { params: Promise<{ name: strin
   return (
     <div className="space-y-6">
       <NoticeBar notice={notice} onClose={closeNotice} />
-      <Coach campaign={name} onDone={reload} />
+      {canOperate && <Coach campaign={name} onDone={reload} />}
 
       {loading && !data ? (
         <Loading what="Loading playbook versions" strip={false} rows={4} />

@@ -8,6 +8,7 @@ import { count, dateTime, fileSize, languageName } from "@/lib/api/format";
 import { documentListSchema, documentSchema, knowledgeSearchSchema, okSchema, trainingRunSchema, type KnowledgeSearch, type TrainingDocument } from "@/lib/api/schemas";
 import { Banner, Button, Confirm, DataTable, EmptyState, ErrorState, Field, Input, Loading, NoticeBar, Panel, Select, Status, type Column, type Notice, type Tone } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
+import { useAccess } from "@/components/dashboard/access";
 
 const ACCEPTED = [".pdf", ".docx", ".pptx", ".html", ".htm", ".csv", ".txt", ".md"];
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -142,6 +143,7 @@ function AddSources({ campaign, onAdded }: { campaign: string; onAdded: (notice:
 }
 
 function Sources({ campaign, documents, onChanged }: { campaign: string; documents: TrainingDocument[]; onChanged: (notice: Notice) => void }) {
+  const { canOperate } = useAccess();
   const [removing, setRemoving] = useState<TrainingDocument | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -192,16 +194,20 @@ function Sources({ campaign, documents, onChanged }: { campaign: string; documen
     { key: "language", label: "Language", render: (d) => (d.language ? languageName(d.language) : "–") },
     { key: "size", label: "Size", numeric: true, sortValue: (d) => d.size_bytes, render: (d) => (d.kind === "url" ? "–" : fileSize(d.size_bytes)) },
     { key: "added", label: "Added", sortValue: (d) => d.uploaded_at ?? "", render: (d) => <span className="text-fg-2">{dateTime(d.uploaded_at)}</span> },
-    {
-      key: "remove",
-      label: "",
-      render: (d) => (
-        <Button variant="ghost" size="sm" aria-label={`Remove ${d.name}`} onClick={() => (setError(null), setRemoving(d))}>
-          <Trash2 className="size-3.5" aria-hidden="true" />
-          <span className="sm:sr-only">Remove</span>
-        </Button>
-      ),
-    },
+    ...(canOperate
+      ? [
+          {
+            key: "remove",
+            label: "",
+            render: (d) => (
+              <Button variant="ghost" size="sm" aria-label={`Remove ${d.name}`} onClick={() => (setError(null), setRemoving(d))}>
+                <Trash2 className="size-3.5" aria-hidden="true" />
+                <span className="sm:sr-only">Remove</span>
+              </Button>
+            ),
+          } satisfies Column<TrainingDocument>,
+        ]
+      : []),
   ];
 
   return (
@@ -313,6 +319,7 @@ function Training({ campaign, documents }: { campaign: string; documents: Traini
     }
   }
 
+  const { canOperate } = useAccess();
   const ready = documents.filter((d) => d.status === "ready").length;
   const stillReading = documents.filter(reading).length;
   const playbook = `/dashboard/campaigns/${encodeURIComponent(campaign)}/playbook`;
@@ -339,6 +346,8 @@ function Training({ campaign, documents }: { campaign: string; documents: Traini
         <Confirm label="Build a draft playbook" confirmLabel="Build draft" busy={busy} error={error} onConfirm={start} onCancel={() => (setAsking(false), setError(null))}>
           Build a new draft from the script and {ready} ready {ready === 1 ? "source" : "sources"}? This uses the AI model and can take a few minutes. Nothing changes on live calls.
         </Confirm>
+      ) : !canOperate ? (
+        <p className="t-meta">An operator or admin can build a draft.</p>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="primary" disabled={running || stillReading > 0} onClick={() => setAsking(true)}>
@@ -357,6 +366,7 @@ export default function KnowledgePage({ params }: { params: Promise<{ name: stri
   const [notice, setNotice] = useState<Notice>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
   const changed = (n: Notice) => (setNotice(n), reload());
+  const { canOperate } = useAccess();
 
   // A source is read in the background: keep the list current until none is waiting.
   const waiting = data?.some(reading) ?? false;
@@ -369,13 +379,13 @@ export default function KnowledgePage({ params }: { params: Promise<{ name: stri
   return (
     <div className="space-y-6">
       <NoticeBar notice={notice} onClose={closeNotice} />
-      <AddSources campaign={name} onAdded={changed} />
+      {canOperate && <AddSources campaign={name} onAdded={changed} />}
       {loading && !data ? (
         <Loading what="Loading sources" strip={false} rows={4} />
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 ? (
-        <EmptyState title="The agent has no documents yet">Upload price lists, product sheets, FAQs or case studies, or add your website. The agent looks facts up in them during calls instead of guessing.</EmptyState>
+        <EmptyState title="The agent has no documents yet">{!canOperate && "An operator or admin can add them. "}Upload price lists, product sheets, FAQs or case studies, or add your website. The agent looks facts up in them during calls instead of guessing.</EmptyState>
       ) : data ? (
         <Sources campaign={name} documents={data} onChanged={changed} />
       ) : null}

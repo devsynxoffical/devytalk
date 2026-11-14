@@ -7,6 +7,7 @@ import { DASH, FACTOR_LABELS, count, dateTime, duration, label, languageName } f
 import { leadDetailSchema, leadImportSchema, leadListSchema, type Lead, type LeadDetail, type LeadImport } from "@/lib/api/schemas";
 import { Banner, Button, DataTable, Drawer, EmptyState, ErrorState, Field, Input, KeyValues, Loading, Segmented, Select, Skeleton, Status, Tag, type Column, type Tone } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
+import { useAccess } from "@/components/dashboard/access";
 
 const PAGE_SIZE = 25;
 const CATEGORY_TONE: Record<Lead["category"], Tone> = { hot: "crit", warm: "warn", cold: "info", unscored: "neutral" };
@@ -271,6 +272,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
   useEffect(() => setPage(0), [category, status, intent, minScore, query]);
 
   const { data, error, loading, reload } = useApi(backendUrl(["campaigns", name, "leads"], { category, status, intent, min_score: minScore, q: query, limit: PAGE_SIZE, offset: page * PAGE_SIZE }), leadListSchema);
+  const { canOperate } = useAccess();
   const filtered = Boolean(category || status || intent || minScore || query);
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const clear = () => (setCategory(""), setStatus(""), setIntent(""), setMinScore(""), setSearch(""));
@@ -307,7 +309,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
 
   return (
     <div className="space-y-4">
-      <ImportLeads campaign={name} onImported={reload} />
+      {canOperate && <ImportLeads campaign={name} onImported={reload} />}
       <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
         <Segmented label="Lead quality" value={category} onChange={setCategory} options={[["", "All"], ["hot", "Hot"], ["warm", "Warm"], ["cold", "Cold"], ["unscored", "Unscored"]]} />
         <div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:grid-cols-3">
@@ -359,7 +361,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
           </EmptyState>
         ) : (
           <EmptyState title="No leads in this campaign yet">
-            Import a CSV or Excel sheet above. Each row needs a phone number.
+            {canOperate ? "Import a CSV or Excel sheet above. Each row needs a phone number." : "An operator or admin can import a lead sheet."}
           </EmptyState>
         )
       ) : data ? (

@@ -6,6 +6,7 @@ import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { count, dateTime } from "@/lib/api/format";
 import { jobsSchema, okSchema, type Job } from "@/lib/api/schemas";
 import { Button, DataTable, EmptyState, ErrorState, Loading, Metric, MetricStrip, NoticeBar, PageHeader, Panel, Segmented, Status, type Column, type Notice, type Tone } from "@/components/dashboard/ui";
+import { useAccess } from "@/components/dashboard/access";
 
 const KIND: Record<string, string> = { booking_webhook: "Booking notification", call_review: "Call review", training_run: "Training run" };
 const STATE: Record<Job["status"], { text: string; tone: Tone }> = {
@@ -22,6 +23,7 @@ export default function SystemPage() {
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
+  const { canOperate } = useAccess();
 
   async function retry(job: Job) {
     setBusy(job.id);
@@ -56,7 +58,7 @@ export default function SystemPage() {
       key: "action",
       label: "",
       render: (job) =>
-        job.status === "dead" ? (
+        job.status === "dead" && canOperate ? (
           <Button size="sm" busy={busy === job.id} onClick={() => retry(job)}>
             {busy !== job.id && <RotateCcw className="size-3.5" aria-hidden="true" />} Run again
           </Button>

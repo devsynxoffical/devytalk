@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useLayoutEffect } from "react";
 import { count } from "@/lib/api/format";
 
 export type Point = { date: string; value: number };
@@ -48,9 +48,11 @@ export function AreaChart({ points, measure, color, line = "#0a1c40" }: { points
   const [width, setWidth] = useState(720);
   const [active, setActive] = useState<number | null>(null);
 
-  useEffect(() => {
+  // Measured before the first paint, so the chart is never drawn wider than its container.
+  useLayoutEffect(() => {
     const element = frame.current;
     if (!element) return;
+    setWidth(Math.max(280, Math.round(element.clientWidth)));
     const observer = new ResizeObserver(([entry]) => setWidth(Math.max(280, Math.round(entry.contentRect.width))));
     observer.observe(element);
     return () => observer.disconnect();
@@ -82,7 +84,7 @@ export function AreaChart({ points, measure, color, line = "#0a1c40" }: { points
   }
 
   return (
-    <div ref={frame} className="relative" data-testid="timeline">
+    <div ref={frame} className="relative overflow-x-clip" data-testid="timeline">
       <svg
         width={width}
         height={HEIGHT}

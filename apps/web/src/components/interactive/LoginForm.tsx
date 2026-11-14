@@ -10,20 +10,24 @@ function safeNext(value: string | null): string {
 }
 
 /**
- * Sign in with the access token of your DevyTalk calling engine. The token is checked
- * by the server and kept in a cookie that page scripts cannot read.
+ * Sign in with your own account, or with the access token of the calling engine (the
+ * owner's credential, used for first setup). Either is checked by the server and kept
+ * in a cookie that page scripts cannot read.
  */
 export function LoginForm() {
   const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
+  const [mode, setMode] = useState<"account" | "token">("account");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!token.trim()) {
-      setError("Enter your access token.");
+    if (mode === "token" ? !token.trim() : !email.trim() || !password) {
+      setError(mode === "token" ? "Enter your access token." : "Enter your email and password.");
       return;
     }
     setBusy(true);
@@ -32,7 +36,7 @@ export function LoginForm() {
       const response = await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify(mode === "token" ? { token } : { email, password }),
       });
       if (response.ok) {
         router.replace(next);
@@ -49,9 +53,20 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
-      <Field label="Access token" hint={error ? undefined : "The API token of your calling engine: the API_TOKEN setting, or the api_token file in its data folder."}>
-        <Input type="password" autoComplete="current-password" value={token} onChange={(e) => setToken(e.target.value)} aria-invalid={!!error} className="t-figure" autoFocus />
-      </Field>
+      {mode === "account" ? (
+        <>
+          <Field label="Email">
+            <Input type="email" autoComplete="username" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!error} autoFocus />
+          </Field>
+          <Field label="Password">
+            <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={!!error} />
+          </Field>
+        </>
+      ) : (
+        <Field label="Access token" hint={error ? undefined : "The API token of your calling engine: the API_TOKEN setting, or the api_token file in its data folder."}>
+          <Input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} aria-invalid={!!error} className="t-figure" autoFocus />
+        </Field>
+      )}
       {error && (
         <p className="rounded-control bg-crit-bg px-3 py-2 text-[13px] font-medium text-crit" role="alert">
           {error}
@@ -60,6 +75,12 @@ export function LoginForm() {
       <Button type="submit" variant="primary" busy={busy} className="w-full">
         Sign in
       </Button>
+      <p className="text-[12.5px] text-fg-3">
+        {mode === "account" ? "Setting up, or no account yet? " : "Have an account? "}
+        <button type="button" className="font-medium text-accent hover:underline" onClick={() => (setMode(mode === "account" ? "token" : "account"), setError(null))}>
+          {mode === "account" ? "Use the engine's access token" : "Use your email and password"}
+        </button>
+      </p>
     </form>
   );
 }

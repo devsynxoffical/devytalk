@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, ChevronLeft, ChevronRight, CornerDownLeft, LayoutGrid, LogOut, Megaphone, Search, UserRound, type LucideIcon } from "lucide-react";
+import { Activity, Bell, ChevronLeft, ChevronRight, CornerDownLeft, KeyRound, LayoutGrid, LogOut, Megaphone, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
-import { campaignListSchema, jobsSchema, type Campaign } from "@/lib/api/schemas";
+import { campaignListSchema, jobsSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
+import { AccessProvider, ROLE_LABEL, initials, useAccess } from "./access";
 import { Status } from "./ui";
 
 const SECTIONS: [string, string][] = [
@@ -163,6 +164,8 @@ function Crumbs({ pathname }: { pathname: string }) {
       if (parts[2] && section) crumbs.push({ label: section[1], href: campaignHref(name, section[0]) });
     }
   } else if (parts[0] === "system") crumbs.push({ label: "Background work", href: "/dashboard/system" });
+  else if (parts[0] === "team") crumbs.push({ label: "Team", href: "/dashboard/team" });
+  else if (parts[0] === "account") crumbs.push({ label: "Your account", href: "/dashboard/account" });
   else crumbs.push({ label: "Overview", href: "/dashboard" });
   const parent = crumbs.length > 1 ? crumbs[crumbs.length - 2] : null;
   return (
@@ -199,7 +202,47 @@ function Crumbs({ pathname }: { pathname: string }) {
 
 // ----------------------------------------------------------------------------- shell
 
+function Identity({ me }: { me: Me | null }) {
+  if (!me) return <p className="t-meta">Loading your account</p>;
+  return (
+    <>
+      <p className="truncate text-[13.5px] font-semibold text-fg">{me.kind === "token" ? "Engine access token" : me.name || me.email}</p>
+      <p className="t-meta mt-0.5 truncate">{me.kind === "token" ? "The owner's credential, with full access" : me.email}</p>
+      <p className="mt-1.5">
+        <Status tone={me.role === "admin" ? "pos" : me.role === "operator" ? "info" : "neutral"}>{ROLE_LABEL[me.role]}</Status>
+      </p>
+    </>
+  );
+}
+
+function AccountLinks({ me, isAdmin, className }: { me: Me | null; isAdmin: boolean; className: string }) {
+  return (
+    <>
+      {isAdmin && (
+        <Link href="/dashboard/team" className={className}>
+          <UsersRound className="size-4" aria-hidden="true" /> Team
+        </Link>
+      )}
+      {me?.kind === "user" && (
+        <Link href="/dashboard/account" className={className}>
+          <KeyRound className="size-4" aria-hidden="true" /> Change password
+        </Link>
+      )}
+    </>
+  );
+}
+
+/** The console frame. Everything inside it can ask what the signed-in person may do. */
 export function Shell({ children }: { children: ReactNode }) {
+  return (
+    <AccessProvider>
+      <Frame>{children}</Frame>
+    </AccessProvider>
+  );
+}
+
+function Frame({ children }: { children: ReactNode }) {
+  const { me, isAdmin } = useAccess();
   const pathname = usePathname();
   const router = useRouter();
   const [palette, setPalette] = useState(false);
@@ -360,14 +403,14 @@ export function Shell({ children }: { children: ReactNode }) {
                 aria-label="Account"
                 className="grid size-8 place-items-center rounded-control bg-signal text-[11px] font-semibold text-on-signal hover:bg-accent-strong"
               >
-                OP
+                {initials(me) || <UserRound className="size-4" aria-hidden="true" />}
               </button>
               <Popover open={menu === "account"} onClose={() => setMenu(null)} label="Account" className="w-64">
-                <div className="border-b border-line px-4 py-3">
-                  <p className="text-[13.5px] font-semibold text-fg">Operator</p>
-                  <p className="t-meta mt-0.5">Signed in with the engine&apos;s access token</p>
+                <div className="border-b border-line px-4 py-3" data-testid="identity">
+                  <Identity me={me} />
                 </div>
                 <div className="p-1.5">
+                  <AccountLinks me={me} isAdmin={isAdmin} className="flex w-full items-center gap-2 rounded-control px-2.5 py-2 text-left text-[13.5px] text-fg-2 hover:bg-sunken hover:text-fg" />
                   <button type="button" onClick={signOut} disabled={leaving} className="flex w-full items-center gap-2 rounded-control px-2.5 py-2 text-left text-[13.5px] text-fg-2 hover:bg-sunken hover:text-fg disabled:opacity-50">
                     <LogOut className="size-4" aria-hidden="true" /> Sign out
                   </button>
@@ -411,9 +454,11 @@ export function Shell({ children }: { children: ReactNode }) {
           <>
             <div className="fixed inset-0 -z-10 animate-fade bg-fg/35" onClick={() => setMenu(null)} aria-hidden="true" />
             <div role="dialog" aria-label="Account" className="absolute inset-x-0 bottom-full animate-sheet-up rounded-t-overlay border-t border-line bg-surface p-4 shadow-overlay">
-              <p className="text-[14px] font-semibold text-fg">Operator</p>
-              <p className="t-meta mt-0.5">Signed in with the engine&apos;s access token</p>
-              <button type="button" onClick={signOut} disabled={leaving} className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-control border border-line-strong text-[14px] font-medium text-fg">
+              <Identity me={me} />
+              <div className="mt-3 space-y-2">
+                <AccountLinks me={me} isAdmin={isAdmin} className="flex h-11 w-full items-center justify-center gap-2 rounded-control border border-line-strong text-[14px] font-medium text-fg" />
+              </div>
+              <button type="button" onClick={signOut} disabled={leaving} className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-control border border-line-strong text-[14px] font-medium text-fg">
                 <LogOut className="size-4" aria-hidden="true" /> Sign out
               </button>
             </div>

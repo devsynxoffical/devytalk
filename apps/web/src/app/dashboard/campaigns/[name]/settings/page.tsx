@@ -7,6 +7,7 @@ import { money } from "@/lib/api/format";
 import { rulesSchema, type Rules } from "@/lib/api/schemas";
 import { Banner, Button, ErrorState, Field, Input, Loading, NoticeBar, buttonClass, type Notice } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
+import { useAccess } from "@/components/dashboard/access";
 
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 const DAY_TEXT = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" };
@@ -94,6 +95,7 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
+  const { isAdmin } = useAccess();
 
   useEffect(() => {
     if (data) setForm(toForm(data));
@@ -135,7 +137,14 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
         </div>
       )}
 
-      <div className="rounded-panel border border-line bg-surface px-5 py-6">
+      {!isAdmin && (
+        <div className="mb-5">
+          <Banner tone="info" title="You can read these rules" role="status">
+            Only an admin can change calling rules and budgets.
+          </Banner>
+        </div>
+      )}
+      <fieldset disabled={!isAdmin} className="min-w-0 rounded-panel border border-line bg-surface px-5 py-6">
         <Group id="schedule" title="Calling schedule" description="Calls are only placed on these days and inside these hours, in each lead's own time zone.">
           <div className="sm:col-span-2">
             <p className="mb-1 text-[12.5px] font-medium text-fg-2" id="days-label">
@@ -204,17 +213,19 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
             </a>
           </div>
         </Group>
-      </div>
+      </fieldset>
 
-      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 mt-5 flex items-center justify-end gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 md:bottom-0">
-        <p className="t-meta mr-auto">{dirty ? "You have unsaved changes." : "No changes."}</p>
-        <Button onClick={() => (setForm(toForm(data)), setErrors({}))} disabled={!dirty || busy}>
-          Discard
-        </Button>
-        <Button type="submit" variant="primary" busy={busy} disabled={!dirty}>
-          Save rules
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 mt-5 flex items-center justify-end gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 md:bottom-0">
+          <p className="t-meta mr-auto">{dirty ? "You have unsaved changes." : "No changes."}</p>
+          <Button onClick={() => (setForm(toForm(data)), setErrors({}))} disabled={!dirty || busy}>
+            Discard
+          </Button>
+          <Button type="submit" variant="primary" busy={busy} disabled={!dirty}>
+            Save rules
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

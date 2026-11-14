@@ -26,6 +26,11 @@ export async function callBackend(path: string, token: string, init: RequestInit
   });
 }
 
+/** A request to the engine that carries no credential: signing in. */
+export async function callBackendPublic(path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(`${BACKEND_URL}${path}`, { ...init, cache: "no-store", signal: init.signal ?? AbortSignal.timeout(15_000) });
+}
+
 /**
  * Turn the path segments of a dashboard request into an engine API path.
  * Only `/api/...` is reachable through the proxy: Twilio webhooks, the media socket
@@ -36,6 +41,9 @@ export function enginePath(segments: string[]): string | null {
   for (const segment of segments) {
     if (!segment || segment === "." || segment === ".." || segment.includes("/") || segment.includes("\\")) return null;
   }
+  // Signing in answers with a session token. It goes through /api/session, which keeps
+  // the token in an httpOnly cookie; through this proxy it would reach page scripts.
+  if (segments[0] === "auth" && segments[1] === "login") return null;
   return "/api/" + segments.map(encodeURIComponent).join("/");
 }
 
