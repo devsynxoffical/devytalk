@@ -134,7 +134,7 @@ function Profile({ data }: { data: LeadDetail }) {
                 {call.summary && <p className="mt-1.5 text-fg-2">{call.summary}</p>}
                 {call.transcript.length > 0 && (
                   <>
-                    <button type="button" className="mt-1.5 text-[12.5px] font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg" aria-expanded={openCall === call.call_run_id} onClick={() => setOpenCall(openCall === call.call_run_id ? null : call.call_run_id)}>
+                    <button type="button" className="mt-1.5 text-[12.5px] font-medium text-accent hover:underline" aria-expanded={openCall === call.call_run_id} onClick={() => setOpenCall(openCall === call.call_run_id ? null : call.call_run_id)}>
                       {openCall === call.call_run_id ? "Hide transcript" : "Show transcript"}
                     </button>
                     {openCall === call.call_run_id && (

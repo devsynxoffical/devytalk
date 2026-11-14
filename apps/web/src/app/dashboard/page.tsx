@@ -115,7 +115,7 @@ function Activity() {
         <ErrorState message={error.message} onRetry={reload} />
       ) : data ? (
         <>
-          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={SERIES.green.mark} />
+          <AreaChart points={data.days.map((day) => ({ date: day.date, value: day[measure] }))} measure={MEASURES[measure]} color={measure === "conversions" ? SERIES.green.mark : "#5bb3fd"} line={measure === "conversions" ? "#0a1c40" : SERIES.blue.mark} />
           {total === 0 && <p className="t-meta mt-1 text-center">No {MEASURES[measure].toLowerCase()} in this period.</p>}
         </>
       ) : null}
@@ -126,7 +126,7 @@ function Activity() {
 function BackgroundWork() {
   const { data, error } = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
   return (
-    <Panel title="Background work" description="Reviews, booking notifications, training" actions={<Link href="/dashboard/system" className="text-[12.5px] font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">Open</Link>} flush>
+    <Panel title="Background work" description="Reviews, booking notifications, training" actions={<Link href="/dashboard/system" className="text-[12.5px] font-medium text-accent hover:underline">Open</Link>} flush>
       {error ? (
         <p className="px-4 py-3 text-[13px] text-crit" role="alert">{error.message}</p>
       ) : (
@@ -276,7 +276,7 @@ export default function OverviewPage() {
             value={count(answered)}
             total={count(calls)}
             note={calls === 0 ? "No calls placed yet" : `across ${count(items.length)} ${items.length === 1 ? "campaign" : "campaigns"}`}
-            aside={<Ring share={calls > 0 ? answered / calls : null} tint={SERIES.ink} label="Share of calls answered" />}
+            aside={<Ring share={calls > 0 ? answered / calls : null} tint={SERIES.blue} label="Share of calls answered" />}
           />
           <Metric
             testId="tile-conversions"
@@ -357,7 +357,7 @@ export default function OverviewPage() {
             ) : (
               <div className="space-y-3.5" data-testid="outcomes">
                 {shown.map(([name, n]) => (
-                  <BarRow key={name} name={label(name)} share={n / topOutcome} figure={count(n)} detail={calls > 0 ? `${percent(n / calls, 0)} of calls` : undefined} tint={name === "meeting_booked" || name === "sale_closed" ? SERIES.green : SERIES.ink} />
+                  <BarRow key={name} name={label(name)} share={n / topOutcome} figure={count(n)} detail={calls > 0 ? `${percent(n / calls, 0)} of calls` : undefined} tint={name === "meeting_booked" || name === "sale_closed" ? SERIES.green : SERIES.blue} />
                 ))}
               </div>
             )}

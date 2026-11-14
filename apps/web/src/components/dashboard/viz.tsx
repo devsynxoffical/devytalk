@@ -7,18 +7,18 @@ import { cn } from "@/lib/cn";
  * Colours for data marks. Text never wears these: figures and labels stay in ink, and a
  * coloured mark beside them carries identity.
  *
- * SERIES: two marks only, neon green and black, told apart by lightness as much as by
- * hue, on a neutral grey track.
+ * SERIES: neon green and bright blue, told apart by lightness as much as by hue, on a
+ * light track.
  * STATUS: reserved for state. Always shown with a word, never as colour alone.
  */
 export const SERIES = {
   green: { mark: "#39ff14", track: "#e9e9e9" },
-  ink: { mark: "#0a0a0a", track: "#e4e4e4" },
+  blue: { mark: "#2471e7", track: "#e3ecfb" },
 } as const;
 
 export const STATUS = {
   good: { mark: "#39ff14", track: "#e9e9e9" },
-  warning: { mark: "#f5a400", track: "#eeeeee" },
+  warning: { mark: "#e6701e", track: "#eeeeee" },
   critical: { mark: "#e5281c", track: "#eeeeee" },
   none: { mark: "#bdbdbd", track: "#efefef" },
 } as const;
@@ -60,7 +60,7 @@ export function Ring({ share, tint, label, size = 52 }: { share: number | null; 
  * Rows that compare one measure across named things: a name, a bar and a figure per
  * row, bars on a shared scale so lengths can be compared down the list.
  */
-export function BarRow({ name, share, figure, detail, tint = SERIES.ink, muted = false }: { name: ReactNode; share: number; figure: ReactNode; detail?: ReactNode; tint?: Tint; muted?: boolean }) {
+export function BarRow({ name, share, figure, detail, tint = SERIES.blue, muted = false }: { name: ReactNode; share: number; figure: ReactNode; detail?: ReactNode; tint?: Tint; muted?: boolean }) {
   const width = `${Math.max(0, Math.min(1, share)) * 100}%`;
   return (
     <div>

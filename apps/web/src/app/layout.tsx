@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: { siteName: "DevyTalk", type: "website" },
 };
 
-export const viewport: Viewport = { themeColor: "#0b1324" };
+export const viewport: Viewport = { themeColor: "#0a1c40" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

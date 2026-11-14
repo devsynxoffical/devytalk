@@ -14,27 +14,27 @@ const POINTS: [string, string][] = [
 export default function LoginPage() {
   return (
     <div className="app grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-line bg-sunken p-10 text-fg lg:flex">
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-deep p-10 text-white/75 lg:flex">
         <Link href="/" className="flex items-center gap-2.5" aria-label="DevyTalk home">
-          <span className="grid size-7 place-items-center rounded-[7px] bg-fg" aria-hidden="true">
-            <svg viewBox="0 0 24 24" className="size-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+          <span className="grid size-7 place-items-center rounded-[7px] bg-white" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="size-4 text-deep" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
               <path d="M5 12h.5M8.5 8.5v7M12 5v14M15.5 8.5v7M19 12h.5" />
             </svg>
           </span>
-          <span className="text-[15px] font-semibold tracking-tight text-fg">DevyTalk</span>
+          <span className="text-[15px] font-semibold tracking-tight text-white">DevyTalk</span>
         </Link>
         <div>
-          <p className="max-w-md text-[28px] font-medium leading-[1.2] tracking-[-0.02em] text-fg">The console for AI sales calls.</p>
+          <p className="max-w-md text-[28px] font-medium leading-[1.2] tracking-[-0.02em] text-white">The console for AI sales calls.</p>
           <ul className="mt-8 max-w-md space-y-5">
             {POINTS.map(([title, text]) => (
-              <li key={title} className="border-l-[3px] border-fg pl-4">
-                <p className="text-[14px] font-semibold text-fg">{title}</p>
+              <li key={title} className="border-l-[3px] border-ember pl-4">
+                <p className="text-[14px] font-semibold text-white">{title}</p>
                 <p className="mt-0.5 text-[13px] leading-relaxed">{text}</p>
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-[12px] text-fg/70">Access is limited to operators of this calling engine.</p>
+        <p className="text-[12px] text-white/55">Access is limited to operators of this calling engine.</p>
       </aside>
 
       <main className="flex items-center justify-center px-5 py-12 pt-safe">
@@ -51,7 +51,7 @@ export default function LoginPage() {
           </Suspense>
           <p className="mt-8 border-t border-line pt-4 text-[12.5px] text-fg-3">
             Not a customer yet?{" "}
-            <Link href="/demo" className="font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">
+            <Link href="/demo" className="font-medium text-accent hover:underline">
               Talk to us
             </Link>
           </p>

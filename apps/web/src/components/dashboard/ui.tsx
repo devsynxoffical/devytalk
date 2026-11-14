@@ -258,7 +258,7 @@ export function Confirm({ label, children, confirmLabel, tone = "primary", busy,
 // ----------------------------------------------------------------------------- forms
 
 const CONTROL =
-  "w-full rounded-control border border-line-strong bg-surface px-2.5 text-[13.5px] text-fg placeholder:text-fg-3 placeholder:[font-family:var(--font-app)] placeholder:tracking-normal transition-[border-color,box-shadow] duration-100 hover:border-fg-3 focus:border-fg focus:outline-none focus:ring-[3px] focus:ring-signal/60 disabled:bg-sunken disabled:text-fg-3 max-sm:text-[16px]";
+  "w-full rounded-control border border-line-strong bg-surface px-2.5 text-[13.5px] text-fg placeholder:text-fg-3 placeholder:[font-family:var(--font-app)] placeholder:tracking-normal transition-[border-color,box-shadow] duration-100 hover:border-fg-3 focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/25 disabled:bg-sunken disabled:text-fg-3 max-sm:text-[16px]";
 
 export function Field({ label, hint, error, children, className }: { label: string; hint?: ReactNode; error?: string | null; children: ReactNode; className?: string }) {
   return (

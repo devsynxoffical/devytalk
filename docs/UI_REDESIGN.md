@@ -30,13 +30,18 @@ button; tables that scrolled sideways on phones; spinners instead of placeholder
 The product is a record of calls and money and a place to make a few careful
 decisions. The design treats it as a ledger and a console, not a showcase.
 
-- **White, neon green, black.** White canvas and surfaces, black type, and one
-  colour: neon green (`#39ff14`). Neon green is used as a fill (primary buttons, the
-  active navigation item, selected options, the coach panel, positive data) with black
-  text on top. It is never used as a text or link colour, because it cannot be read on
-  white; links are black with a neon underline and focus rings are black.
+- **Palette.** White surfaces and black type, with five colours, each with one job:
+
+  | Colour | Code | Job |
+  | --- | --- | --- |
+  | Neon green | `#39FF14` | Application only. Primary buttons, the active navigation item, selected options, positive data. Always a fill with black text on it, never a text colour |
+  | Bright blue | `#2471E7` | Links, focus rings, secondary data, "information" markers. The marketing site's primary colour |
+  | Warm orange | `#E6701E` | Warnings and highlights: automatic pauses, drafts awaiting approval, the accent on dark surfaces |
+  | Deep navy | `#0A1C40` | The few dark surfaces: the sign-in panel, the coach panel, the marketing site's dark sections and text |
+  | Soft blue | `#5BB3FD` | Chart fills and gradients |
+
 - **States keep black text.** A coloured square beside the word carries the state
-  (neon green, amber, red, blue). Only error messages use red text.
+  (neon green, orange, red, blue). Only error messages use red text.
 - **Hairlines, not boxes.** Structure comes from 1px rules and alignment. A panel is
   used only where content needs its own surface. Headline figures sit in one divided
   strip, read across like a ledger line, instead of a grid of cards.
@@ -84,7 +89,7 @@ All in `apps/web/src/app/globals.css` under `@theme`, used through utilities
 | Radius | `chip` 2, `control` 5, `panel` 8, `overlay` 12 |
 | Shadow | `raised`, `overlay`. Panels have none |
 | Motion | `rise`, `pop`, `slide-in`, `sheet-up`, `fade`, `sheen`, `draw`, `live` |
-| Data marks | `SERIES` (neon green and black) and `STATUS` in `components/dashboard/viz.tsx`. The chart is a black line over a neon fill |
+| Data marks | `SERIES` (neon green and bright blue) and `STATUS` in `components/dashboard/viz.tsx`. The activity chart is a blue line over a soft-blue fill; conversions use a navy line over a neon fill |
 
 Spacing uses the 4px scale; page gutters are 16px on phones and 24px from 640px.
 Breakpoints: 640 (table instead of records), 768 (rail instead of tab bar), 1024 (rail
@@ -159,7 +164,7 @@ Each action that places calls asks for confirmation and shows the engine's own a
 ## 10. Not done
 
 - No dark theme.
-- The marketing website still uses its earlier emerald palette; only the application uses neon green.
+- The marketing website uses the navy, blue and orange palette; neon green appears only in the application.
 - Document upload, training and knowledge search still have no screen.
 - No user accounts or roles, so there is no team or permission screen to design.
 - The call workspace shows finished and in-progress calls from the log; it does not

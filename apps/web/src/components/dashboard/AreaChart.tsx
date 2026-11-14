@@ -43,7 +43,7 @@ export function smoothPath(points: [number, number][]): string {
  * One measure over time as a line with a soft fill. Hovering or touching shows the day
  * and its value; the same numbers are in a table for screen readers.
  */
-export function AreaChart({ points, measure, color }: { points: Point[]; measure: string; color: string }) {
+export function AreaChart({ points, measure, color, line = "#0a1c40" }: { points: Point[]; measure: string; /** the fill under the line */ color: string; line?: string }) {
   const frame = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(720);
   const [active, setActive] = useState<number | null>(null);
@@ -115,11 +115,11 @@ export function AreaChart({ points, measure, color }: { points: Point[]; measure
           ) : null,
         )}
         {geometry.area && <path d={geometry.area} fill={`url(#${gradient})`} className="animate-fade" />}
-        <path key={measure} d={geometry.line} fill="none" stroke="#0a0a0a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1" className="animate-draw" style={{ ["--draw-length" as string]: 1 }} />
+        <path key={measure} d={geometry.line} fill="none" stroke={line} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1" className="animate-draw" style={{ ["--draw-length" as string]: 1 }} />
         {active !== null && (
           <g pointerEvents="none">
             <line x1={geometry.xy[active][0]} x2={geometry.xy[active][0]} y1={MARGIN.top} y2={geometry.baseline} stroke="#6a6a6a" strokeWidth="1" strokeDasharray="2 3" />
-            <circle cx={geometry.xy[active][0]} cy={geometry.xy[active][1]} r="5" fill={color} stroke="#0a0a0a" strokeWidth="2" />
+            <circle cx={geometry.xy[active][0]} cy={geometry.xy[active][1]} r="5" fill={color} stroke={line} strokeWidth="2" />
           </g>
         )}
       </svg>

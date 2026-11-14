@@ -157,7 +157,7 @@ function StartForm({ campaign, candidates, liveVersion, onStarted }: { campaign:
     return (
       <EmptyState title="No version to test yet">
         A test compares the live playbook with another version. Ask the coach for a draft on the{" "}
-        <Link href={`/dashboard/campaigns/${encodeURIComponent(campaign)}/playbook`} className="font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">
+        <Link href={`/dashboard/campaigns/${encodeURIComponent(campaign)}/playbook`} className="font-medium text-accent hover:underline">
           Coach &amp; playbook
         </Link>{" "}
         tab first.

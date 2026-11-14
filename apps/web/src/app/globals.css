@@ -1,48 +1,60 @@
 @import "tailwindcss";
 
 /*
- * DevyTalk light theme.
- * ink: text and dark surfaces · brand: emerald-teal primary · lime: highlight · sky: gradient partner
- * Page sections stay pure white; color lives in cards, frames and gradients.
+ * DevyTalk palette: deep navy #0A1C40, bright blue #2471E7, warm orange #E6701E,
+ * soft blue #5BB3FD, white. The application adds neon green #39FF14 for actions.
+ *
+ * Token names are historical and say what a token is for, not its hue:
+ * ink = navy text and dark surfaces · brand = the primary blue scale ·
+ * lime = the warm highlight (orange) · sky = the soft blue partner.
+ * Page sections stay pure white; colour lives in cards, frames and gradients.
  */
 @theme {
-  --color-ink-950: #050f1d;
-  --color-ink-900: #0a1628;
-  --color-ink-800: #16233a;
-  --color-ink-700: #2a3852;
-  --color-ink-600: #46546e;
-  --color-ink-500: #66728a;
-  --color-ink-400: #8f99ad;
-  --color-ink-300: #bac2d1;
-  --color-ink-200: #dfe4ec;
-  --color-ink-100: #eef1f6;
-  --color-ink-50: #f6f8fb;
+  --color-ink-950: #06122b;
+  --color-ink-900: #0a1c40;
+  --color-ink-800: #14295a;
+  --color-ink-700: #263b6b;
+  --color-ink-600: #435580;
+  --color-ink-500: #647296;
+  --color-ink-400: #8e99b5;
+  --color-ink-300: #bac2d6;
+  --color-ink-200: #dfe4ef;
+  --color-ink-100: #eef1f8;
+  --color-ink-50: #f6f8fc;
 
-  --color-brand-50: #ebfbf6;
-  --color-brand-100: #ccf5e8;
-  --color-brand-200: #9bebd3;
-  --color-brand-300: #5fdbb9;
-  --color-brand-400: #26c39c;
-  --color-brand-500: #0fa884;
-  --color-brand-600: #078a6c;
-  --color-brand-700: #086f58;
-  --color-brand-800: #0a5948;
-  --color-brand-900: #0b493d;
-  --color-brand-950: #032a23;
+  --color-brand-50: #eef4fe;
+  --color-brand-100: #dbe8fd;
+  --color-brand-200: #b9d2fb;
+  --color-brand-300: #8db5f8;
+  --color-brand-400: #5b93f1;
+  --color-brand-500: #2471e7;
+  --color-brand-600: #1a5fcf;
+  --color-brand-700: #164da8;
+  --color-brand-800: #153f86;
+  --color-brand-900: #14356b;
+  --color-brand-950: #0a1c40;
 
-  --color-lime-300: #d9f99d;
-  --color-lime-400: #bef264;
-  --color-lime-500: #a3e635;
+  --color-lime-300: #f7b27d;
+  --color-lime-400: #f08a45;
+  --color-lime-500: #e6701e;
 
-  --color-sky-300: #7dd3fc;
-  --color-sky-400: #38bdf8;
+  --color-sky-300: #8ccbfe;
+  --color-sky-400: #5bb3fd;
+
+  /* The palette by name, for the application. */
+  --color-navy: #0a1c40;
+  --color-cobalt: #2471e7;
+  --color-ember: #e6701e;
+  --color-mist: #5bb3fd;
 
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
   /*
    * ---- Application design tokens ("Ledger") ----
    * Used by the dashboard and sign-in only. The marketing site keeps the tokens above.
-   * White surfaces, neon green for emphasis, black type; structure comes from hairlines, not boxes.
+   * White surfaces and black type. Neon green for actions and positive data, bright blue
+   * for links and secondary data, warm orange for warnings and highlights, deep navy for
+   * the few dark surfaces. Structure comes from hairlines, not boxes.
    */
   --font-app: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
   --font-figure: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
@@ -56,17 +68,18 @@
   --color-fg-2: #262626;         /* secondary text */
   --color-fg-3: #6a6a6a;         /* labels, meta */
   --color-rail: #ffffff;         /* navigation rail */
+  --color-deep: #0a1c40;         /* deep navy: the dark surface (sign-in panel, coach panel) */
   --color-rail-2: #f4f4f4;       /* rail hover */
   --color-rail-fg: #262626;
   --color-signal: #39ff14;       /* neon green: actions, active and live markers, positive data. Never used as a text colour: it cannot be read on white */
-  --color-accent: #000000;       /* links and focus rings are black, so they are always legible */
-  --color-accent-strong: #000000;
+  --color-accent: #2471e7;       /* bright blue: links, focus rings, secondary data */
+  --color-accent-strong: #1a5fcf;
 
   /* A state is a coloured marker beside black text. Only errors keep coloured text. */
   --color-pos: #000000;   --color-pos-bg: #e3ffdc;   --color-pos-mark: #39ff14;
-  --color-warn: #000000;  --color-warn-bg: #fff2cc;  --color-warn-mark: #f5a400;
+  --color-warn: #000000;  --color-warn-bg: #fdecdd;  --color-warn-mark: #e6701e;
   --color-crit: #c4160a;  --color-crit-bg: #fde7e4;  --color-crit-mark: #e5281c;
-  --color-info: #000000;  --color-info-bg: #e9f0ff;  --color-info-mark: #2f6fed;
+  --color-info: #000000;  --color-info-bg: #e6effd;  --color-info-mark: #2471e7;
 
   --radius-chip: 2px;
   --radius-control: 5px;
@@ -139,28 +152,28 @@
 @utility bg-mesh-dark {
   background-color: var(--color-brand-950);
   background-image:
-    radial-gradient(60% 80% at 0% 100%, rgb(15 168 132 / 0.85), transparent 60%),
-    radial-gradient(50% 70% at 100% 0%, rgb(56 189 248 / 0.55), transparent 60%),
-    radial-gradient(40% 50% at 70% 100%, rgb(190 242 100 / 0.35), transparent 70%),
-    linear-gradient(135deg, #04342b 0%, #062a3a 100%);
+    radial-gradient(60% 80% at 0% 100%, rgb(36 113 231 / 0.85), transparent 60%),
+    radial-gradient(50% 70% at 100% 0%, rgb(91 179 253 / 0.5), transparent 60%),
+    radial-gradient(40% 50% at 70% 100%, rgb(230 112 30 / 0.4), transparent 70%),
+    linear-gradient(135deg, #0a1c40 0%, #06122b 100%);
 }
 
 /* Soft light mesh used behind product frames. */
 @utility bg-mesh-light {
   background-color: #fff;
   background-image:
-    radial-gradient(60% 90% at 0% 100%, rgb(155 235 211 / 0.9), transparent 65%),
-    radial-gradient(55% 80% at 100% 0%, rgb(125 211 252 / 0.75), transparent 60%),
-    radial-gradient(45% 60% at 85% 100%, rgb(217 249 157 / 0.8), transparent 70%);
+    radial-gradient(60% 90% at 0% 100%, rgb(185 210 251 / 0.9), transparent 65%),
+    radial-gradient(55% 80% at 100% 0%, rgb(140 203 254 / 0.75), transparent 60%),
+    radial-gradient(45% 60% at 85% 100%, rgb(247 178 125 / 0.7), transparent 70%);
 }
 
 @utility bg-dots {
-  background-image: radial-gradient(rgb(10 22 40 / 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(10 28 64 / 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 
 @utility text-gradient {
-  background: linear-gradient(90deg, var(--color-brand-600), #0ea5c6 60%, var(--color-brand-500));
+  background: linear-gradient(90deg, var(--color-brand-600), var(--color-sky-400) 60%, var(--color-brand-500));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -171,11 +184,11 @@
 }
 
 @utility shadow-card {
-  box-shadow: 0 1px 2px rgb(10 22 40 / 0.04), 0 8px 24px -8px rgb(10 22 40 / 0.08);
+  box-shadow: 0 1px 2px rgb(10 28 64 / 0.04), 0 8px 24px -8px rgb(10 28 64 / 0.08);
 }
 
 @utility shadow-float {
-  box-shadow: 0 2px 4px rgb(10 22 40 / 0.04), 0 24px 60px -12px rgb(10 22 40 / 0.18);
+  box-shadow: 0 2px 4px rgb(10 28 64 / 0.04), 0 24px 60px -12px rgb(10 28 64 / 0.18);
 }
 
 @keyframes fadeIn {

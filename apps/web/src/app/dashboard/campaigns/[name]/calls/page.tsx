@@ -178,7 +178,7 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
       </section>
 
       {detail.recording_url && (
-        <a href={detail.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-fg underline decoration-signal decoration-2 underline-offset-4 hover:decoration-fg">
+        <a href={detail.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent hover:underline">
           Open the recording at the phone provider <ExternalLink className="size-3.5" aria-hidden="true" />
         </a>
       )}
