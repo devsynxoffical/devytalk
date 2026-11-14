@@ -17,7 +17,7 @@ const CODES = [
   { code: "+61", flag: "🇦🇺" },
 ];
 
-/** Inline "let the AI agent call me" form. Stores a callback request through /api/leads. */
+/** Inline "call me back" form. Sends a callback request through /api/leads; a person sees it under Requests in the console. Nothing is dialed automatically. */
 export function CallMeBar() {
   const [code, setCode] = useState("+1");
   const [phone, setPhone] = useState("");
@@ -31,7 +31,7 @@ export function CallMeBar() {
   if (status === "success") {
     return (
       <p role="status" className="mx-auto flex w-fit animate-[menuPanel_.3s_ease] items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-5 py-3 text-sm font-medium text-brand-800">
-        <CheckCircle2 className="size-4" aria-hidden="true" /> Got it. Devy will call {code} {phone} in a moment.
+        <CheckCircle2 className="size-4" aria-hidden="true" /> Got it. We will call you back on {code} {phone}.
       </p>
     );
   }

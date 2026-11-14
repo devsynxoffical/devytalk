@@ -18,6 +18,8 @@ const engineDir = process.env.ENGINE_DIR;
 const enginePort = Number(process.env.ENGINE_PORT ?? 8010);
 const webPort = Number(process.env.E2E_PORT ?? 3210);
 const token = process.env.E2E_API_TOKEN ?? "e2e-test-token";
+// What the website uses to hand form submissions to the engine. A test value, like the token above.
+const intakeToken = process.env.E2E_INTAKE_TOKEN ?? "e2e-intake-token";
 const engineUrl = process.env.DEVYTALK_API_URL ?? `http://127.0.0.1:${enginePort}`;
 process.env.E2E_API_TOKEN = token;
 
@@ -32,7 +34,7 @@ if (engineDir) {
     timeout: 120_000,
     reuseExistingServer: false,
     // No provider keys: the engine cannot place a call or reach an AI model during these tests.
-    env: { DATABASE_URL: `sqlite:///${join(work, "e2e.db")}`, DATA_DIR: join(work, "data"), API_TOKEN: token, ANTHROPIC_API_KEY: "" },
+    env: { DATABASE_URL: `sqlite:///${join(work, "e2e.db")}`, DATA_DIR: join(work, "data"), API_TOKEN: token, ANTHROPIC_API_KEY: "", INTAKE_TOKEN: intakeToken },
   });
 }
 servers.push({
@@ -40,7 +42,7 @@ servers.push({
   url: `http://127.0.0.1:${webPort}/login`,
   timeout: 300_000,
   reuseExistingServer: false,
-  env: { DEVYTALK_API_URL: engineUrl },
+  env: { DEVYTALK_API_URL: engineUrl, DEVYTALK_INTAKE_TOKEN: intakeToken, LEADS_DIR: join(tmpdir(), "devytalk-e2e-leads") },
 });
 
 export default defineConfig({

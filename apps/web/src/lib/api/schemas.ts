@@ -379,3 +379,22 @@ export const userSchema = z.object({
 });
 export const userListSchema = z.array(userSchema);
 export type User = z.infer<typeof userSchema>;
+
+/* ---- website requests ---- */
+
+export const websiteRequestSchema = z.object({
+  id: z.number(),
+  kind: z.string(), // demo | trial | contact | newsletter | callback
+  email: z.string().nullable(),
+  name: z.string().nullable(),
+  company: z.string().nullable(),
+  phone: z.string().nullable(),
+  team_size: z.string().nullable(),
+  message: z.string().nullable(),
+  status: z.enum(["new", "handled"]),
+  handled_by: z.string().nullable(),
+  handled_at: z.string().nullable(),
+  created_at: z.string().nullable(),
+});
+export type WebsiteRequest = z.infer<typeof websiteRequestSchema>;
+export const websiteRequestListSchema = z.object({ total: z.number(), new: z.number(), requests: z.array(websiteRequestSchema) });

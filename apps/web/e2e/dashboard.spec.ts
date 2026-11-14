@@ -653,6 +653,50 @@ test("each role is offered only what it may do, and the engine refuses the rest"
   await operator.context.close();
 });
 
+test("what a visitor sends through the website's forms reaches the console", async ({ browser }) => {
+  const context = await browser.newContext();
+  const visitor = await context.newPage();
+
+  // The demo form: checked before it is sent, then handed to the engine.
+  await visitor.goto("/demo");
+  await visitor.getByRole("button", { name: "Book my demo" }).click();
+  await expect(visitor.getByText("Please tell us your name")).toBeVisible();
+  const form = visitor.locator("form", { has: visitor.getByRole("button", { name: "Book my demo" }) }); // the page footer has a newsletter form too
+  await form.getByLabel("Full name").fill("Priya Shah");
+  await form.getByLabel("Work email").fill("priya@northwind.example");
+  await form.getByLabel("Company").fill("Northwind Accounting");
+  await form.getByLabel("Team size").selectOption("6-20");
+  await form.getByLabel("What would you like to see? (optional)").fill("How the agent handles price objections.");
+  await visitor.getByRole("button", { name: "Book my demo" }).click();
+  await expect(visitor.getByRole("heading", { level: 3 })).toBeVisible(); // the confirmation
+
+  // The call-back bar: it promises a call back, not an instant call.
+  await visitor.goto("/");
+  await visitor.getByLabel("Your phone number").fill("415 555 0142");
+  await visitor.getByRole("button", { name: "Call me" }).click();
+  await expect(visitor.getByRole("status").filter({ hasText: "We will call you back on +1 415 555 0142." })).toBeVisible();
+  await context.close();
+
+  // Both are waiting in the console.
+  await page.goto("/dashboard");
+  await expect(page.getByRole("navigation", { name: "Primary" }).first().getByRole("link", { name: /Requests/ })).toContainText("2");
+  await page.getByRole("navigation", { name: "Primary" }).first().getByRole("link", { name: /Requests/ }).click();
+  const requests = page.getByTestId("requests");
+  const demo = requests.locator("tr", { hasText: "Priya Shah" });
+  await expect(demo).toContainText("Demo request");
+  await expect(demo).toContainText("Northwind Accounting · 6-20 people");
+  await expect(demo).toContainText("How the agent handles price objections.");
+  await expect(demo.getByRole("link", { name: "priya@northwind.example" })).toHaveAttribute("href", "mailto:priya@northwind.example");
+  await expect(requests.locator("tr", { hasText: "Call back" }).getByRole("link", { name: "+1 415 555 0142" })).toHaveAttribute("href", "tel:+14155550142");
+
+  await demo.getByRole("button", { name: "Mark handled" }).click();
+  await expect(toast("Priya Shah was marked as handled.")).toBeVisible();
+  await expect(requests.locator("tr", { hasText: "Priya Shah" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Waiting (1)" })).toBeVisible();
+  await page.getByRole("group", { name: "Show requests" }).getByRole("button", { name: "Handled" }).click();
+  await expect(page.getByTestId("requests").locator("tr", { hasText: "Priya Shah" })).toContainText("Handled by api token");
+});
+
 test("errors from the engine are shown with a way to retry", async () => {
   await page.goto("/dashboard/campaigns/No%20such%20campaign");
   await expect(alertWith("This could not be loaded")).toContainText("not found");

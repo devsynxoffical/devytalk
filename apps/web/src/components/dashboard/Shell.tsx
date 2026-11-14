@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, ChevronLeft, ChevronRight, CornerDownLeft, KeyRound, LayoutGrid, LogOut, Megaphone, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Activity, Bell, ChevronLeft, ChevronRight, CornerDownLeft, Inbox, KeyRound, LayoutGrid, LogOut, Megaphone, Search, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
-import { campaignListSchema, jobsSchema, type Campaign, type Me } from "@/lib/api/schemas";
+import { campaignListSchema, jobsSchema, websiteRequestListSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
 import { useTheme } from "@/lib/hooks/useTheme";
 import { THEME_CHOICES } from "@/lib/theme";
@@ -43,10 +43,11 @@ function Mark() {
 
 type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean; count?: number; alert?: boolean };
 
-function useNav(campaignCount: number | undefined, failed: number): NavItem[] {
+function useNav(campaignCount: number | undefined, failed: number, waiting: number): NavItem[] {
   return [
     { href: "/dashboard", label: "Overview", icon: LayoutGrid, exact: true },
     { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, count: campaignCount },
+    { href: "/dashboard/requests", label: "Requests", icon: Inbox, count: waiting > 0 ? waiting : undefined },
     { href: "/dashboard/system", label: "Background work", icon: Activity, count: failed > 0 ? failed : undefined, alert: failed > 0 },
   ];
 }
@@ -67,6 +68,7 @@ function CommandPalette({ campaigns, onClose }: { campaigns: Campaign[]; onClose
     const all: Command[] = [
       { id: "overview", label: "Overview", hint: "Go to", href: "/dashboard" },
       { id: "campaigns", label: "Campaigns", hint: "Go to", href: "/dashboard/campaigns" },
+      { id: "requests", label: "Requests", hint: "Go to", href: "/dashboard/requests" },
       { id: "system", label: "Background work", hint: "Go to", href: "/dashboard/system" },
       ...campaigns.flatMap((c) => SECTIONS.map(([path, text]) => ({ id: `${c.id}${path}`, label: path ? `${c.name} › ${text}` : c.name, hint: path ? "Section" : "Campaign", href: campaignHref(c.name, path) }))),
     ];
@@ -166,6 +168,7 @@ function Crumbs({ pathname }: { pathname: string }) {
       if (parts[2] && section) crumbs.push({ label: section[1], href: campaignHref(name, section[0]) });
     }
   } else if (parts[0] === "system") crumbs.push({ label: "Background work", href: "/dashboard/system" });
+  else if (parts[0] === "requests") crumbs.push({ label: "Requests", href: "/dashboard/requests" });
   else if (parts[0] === "team") crumbs.push({ label: "Team", href: "/dashboard/team" });
   else if (parts[0] === "account") crumbs.push({ label: "Your account", href: "/dashboard/account" });
   else crumbs.push({ label: "Overview", href: "/dashboard" });
@@ -258,6 +261,7 @@ function Frame({ children }: { children: ReactNode }) {
   // Counts and the campaign list for navigation. If either fails, navigation still works; the pages report errors.
   const campaigns = useApi(backendUrl(["campaigns"]), campaignListSchema);
   const jobs = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
+  const requests = useApi(backendUrl(["requests"], { status: "new", limit: 1 }), websiteRequestListSchema);
 
   useEffect(() => {
     setMenu(null);
@@ -281,7 +285,7 @@ function Frame({ children }: { children: ReactNode }) {
   }
 
   const failed = jobs.data?.stats.dead ?? 0;
-  const nav = useNav(campaigns.data?.length, failed);
+  const nav = useNav(campaigns.data?.length, failed, requests.data?.new ?? 0);
   const paused = campaigns.data?.filter((c) => c.stop_reason) ?? [];
   const alerts = failed + paused.length;
   const recent = campaigns.data?.slice(0, 6) ?? [];
@@ -438,7 +442,7 @@ function Frame({ children }: { children: ReactNode }) {
 
       {/* Phones: the four destinations as a tab bar within thumb reach. */}
       <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur pb-safe md:hidden">
-        <ul className="grid grid-cols-4">
+        <ul className="grid grid-cols-5">
           {nav.map((item) => {
             const active = isActive(item, pathname);
             return (

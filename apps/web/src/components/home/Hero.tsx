@@ -56,7 +56,7 @@ export function Hero() {
         </div>
 
         <div style={enter(480)} className="mt-8">
-          <p className="mb-3 text-[13px] font-medium text-ink-500">Or hear our AI agent for yourself. Enter your number:</p>
+          <p className="mb-3 text-[13px] font-medium text-ink-500">Prefer a call? Leave your number and we will call you back:</p>
           <CallMeBar />
         </div>
       </div>
