@@ -3,7 +3,8 @@
 import { use } from "react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { budgetUse, count, label, languageName, money, percent } from "@/lib/api/format";
-import { reportSchema, rulesSchema, type Report, type Rules } from "@/lib/api/schemas";
+import { campaignSchema, reportSchema, rulesSchema, type Report, type Rules } from "@/lib/api/schemas";
+import { GettingStarted } from "@/components/dashboard/CampaignSetup";
 import { Banner, DataTable, EmptyState, ErrorState, KeyValues, Loading, Meter, Metric, MetricStrip, Panel, Tag, type Column } from "@/components/dashboard/ui";
 import { BarRow, Ring, SERIES } from "@/components/dashboard/viz";
 
@@ -97,6 +98,7 @@ export default function PerformancePage({ params }: { params: Promise<{ name: st
   const name = decodeURIComponent(use(params).name);
   const report = useApi(backendUrl(["campaigns", name, "report"]), reportSchema);
   const rules = useApi(backendUrl(["campaigns", name, "rules"]), rulesSchema);
+  const campaign = useApi(backendUrl(["campaigns", name]), campaignSchema);
 
   if ((report.loading && !report.data) || (rules.loading && !rules.data)) return <Loading what="Loading performance" />;
   if (report.error) return <ErrorState message={report.error.message} onRetry={report.reload} />;
@@ -135,7 +137,7 @@ export default function PerformancePage({ params }: { params: Promise<{ name: st
       )}
 
       {r.calls.total === 0 ? (
-        <EmptyState title="No calls yet">Once this campaign places or receives calls, its results appear here.</EmptyState>
+campaign.data ? <GettingStarted campaign={campaign.data} /> : <EmptyState title="No calls yet">Once this campaign places or receives calls, its results appear here.</EmptyState>
       ) : (
         <MetricStrip>
           <Metric label="Total calls" value={count(r.calls.total)} note={`${count(r.calls.reviewed)} reviewed`} />
@@ -185,6 +187,7 @@ export default function PerformancePage({ params }: { params: Promise<{ name: st
         best={r.best_version}
       />
       <Groups title="By language" description="The language the prospect mostly spoke." groups={r.by_language} nameOf={languageName} />
+      {Object.keys(r.by_direction).length > 1 && <Groups title="Outbound and inbound" description="Calls the agent placed, and calls it answered on this campaign's number." groups={r.by_direction} nameOf={(key) => (key === "inbound" ? "Inbound" : "Outbound")} />}
 
       {r.missed_opportunities.length > 0 && (
         <Panel title="Missed opportunities" description="Buying signals or openings the agent did not act on, as noted by call reviews" flush>

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { budgetUse, count, languageName, money } from "@/lib/api/format";
 import { campaignListSchema, type Campaign } from "@/lib/api/schemas";
+import { useAccess } from "@/components/dashboard/access";
 import { campaignTone } from "@/components/dashboard/Shell";
-import { DataTable, EmptyState, ErrorState, Input, Loading, Meter, PageHeader, Panel, Segmented, Status, type Column } from "@/components/dashboard/ui";
+import { DataTable, EmptyState, ErrorState, Input, Loading, Meter, PageHeader, Panel, Segmented, Status, buttonClass, type Column } from "@/components/dashboard/ui";
 
 type Filter = "all" | "active" | "attention";
 const href = (name: string) => `/dashboard/campaigns/${encodeURIComponent(name)}`;
@@ -19,6 +20,7 @@ function CampaignGrid() {
   const [query, setQuery] = useState(initial);
   const [filter, setFilter] = useState<Filter>("all");
   const { data, error, loading, reload } = useApi(backendUrl(["campaigns"]), campaignListSchema);
+  const { isAdmin } = useAccess();
 
   const needle = query.trim().toLowerCase();
   const rows = (data ?? []).filter((c) => c.name.toLowerCase().includes(needle) && (filter === "all" || (filter === "active" ? c.running || c.status === "running" : Boolean(c.stop_reason))));
@@ -85,7 +87,18 @@ function CampaignGrid() {
 
   return (
     <>
-      <PageHeader title="Campaigns" description="Every campaign on this engine. Open one to see its calls, leads and playbook." />
+      <PageHeader
+        title="Campaigns"
+        description="Every campaign on this engine. Open one to see its calls, leads and playbook."
+        actions={
+          isAdmin ? (
+            <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
+              <Plus className="size-3.5" aria-hidden="true" />
+              New campaign
+            </Link>
+          ) : undefined
+        }
+      />
       <div className="mt-5 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full sm:w-72">

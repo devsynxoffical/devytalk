@@ -34,7 +34,10 @@ if (engineDir) {
     timeout: 120_000,
     reuseExistingServer: false,
     // No provider keys: the engine cannot place a call or reach an AI model during these tests.
-    env: { DATABASE_URL: `sqlite:///${join(work, "e2e.db")}`, DATA_DIR: join(work, "data"), API_TOKEN: token, ANTHROPIC_API_KEY: "", INTAKE_TOKEN: intakeToken },
+    env: { DATABASE_URL: `sqlite:///${join(work, "e2e.db")}`, DATA_DIR: join(work, "data"), API_TOKEN: token, ANTHROPIC_API_KEY: "", INTAKE_TOKEN: intakeToken,
+      // An address the engine can print for the phone provider, and no signature check, so a test can
+      // play the phone provider's part for an inbound call. Test settings only: nothing is reachable there.
+      PUBLIC_BASE_URL: "https://engine.example.test", TWILIO_VALIDATE_SIGNATURE: "false" },
   });
 }
 servers.push({

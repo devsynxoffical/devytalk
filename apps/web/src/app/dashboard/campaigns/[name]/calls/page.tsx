@@ -6,7 +6,7 @@ import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { DASH, count, dateTime, duration, label, languageName, money } from "@/lib/api/format";
 import { callDetailSchema, callListSchema, dialResultSchema, type CallDetail, type CallRow } from "@/lib/api/schemas";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
-import { Banner, Button, Confirm, Drawer, EmptyState, ErrorState, Field, Input, Loading, NoticeBar, Panel, Segmented, Skeleton, Status, Tag, type Notice } from "@/components/dashboard/ui";
+import { Banner, Button, Confirm, Drawer, EmptyState, ErrorState, Field, Input, Loading, NoticeBar, Panel, Segmented, Select, Skeleton, Status, Tag, type Notice } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
 import { useAccess } from "@/components/dashboard/access";
 
@@ -287,7 +287,8 @@ type Show = "all" | "answered" | "converted";
 
 export default function CallsPage({ params }: { params: Promise<{ name: string }> }) {
   const name = decodeURIComponent(use(params).name);
-  const { data, error, loading, reload } = useApi(backendUrl(["campaigns", name, "calls"], { limit: 100 }), callListSchema);
+  const [direction, setDirection] = useState<"" | "outbound" | "inbound">("");
+  const { data, error, loading, reload } = useApi(backendUrl(["campaigns", name, "calls"], { limit: 100, direction }), callListSchema);
   const [selected, setSelected] = useState<number | null>(null);
   const [show, setShow] = useState<Show>("all");
   const [notice, setNotice] = useState<Notice>(null);
@@ -324,14 +325,23 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
         <Loading what="Loading calls" strip={false} rows={8} />
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
-      ) : data && data.length === 0 ? (
+      ) : data && data.length === 0 && !direction ? (
         <EmptyState title="No calls yet">Calls appear here as soon as this campaign places or answers one.</EmptyState>
       ) : data ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] [&>*]:min-w-0">
           <Panel
             title="Call log"
             description={`${count(rows.length)} of the latest ${count(data.length)} calls${live ? " · updating live" : ""}`}
-            actions={<Segmented label="Show calls" value={show} onChange={setShow} options={[["all", "All"], ["answered", "Answered"], ["converted", "Converted"]]} />}
+            actions={
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <Select aria-label="Direction" value={direction} onChange={(e) => setDirection(e.target.value as typeof direction)} className="h-8 w-auto">
+                  <option value="">Outbound and inbound</option>
+                  <option value="outbound">Outbound only</option>
+                  <option value="inbound">Inbound only</option>
+                </Select>
+                <Segmented label="Show calls" value={show} onChange={setShow} options={[["all", "All"], ["answered", "Answered"], ["converted", "Converted"]]} />
+              </div>
+            }
             flush
           >
             {rows.length === 0 ? (

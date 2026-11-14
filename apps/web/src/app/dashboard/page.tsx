@@ -21,6 +21,7 @@ import {
   type Version,
 } from "@/lib/api/schemas";
 import { AreaChart } from "@/components/dashboard/AreaChart";
+import { ConnectionsBanner } from "@/components/dashboard/CampaignSetup";
 import { campaignTone } from "@/components/dashboard/Shell";
 import { Banner, DataTable, EmptyState, ErrorState, Loading, Meter, Metric, MetricStrip, PageHeader, Panel, Segmented, Skeleton, Status, buttonClass, type Column, type Tone } from "@/components/dashboard/ui";
 import { BarRow, Ring, SERIES, STATUS } from "@/components/dashboard/viz";
@@ -163,7 +164,10 @@ export default function OverviewPage() {
   const body = (node: React.ReactNode) => (
     <>
       {header}
-      <div className="mt-5">{node}</div>
+      <div className="mt-5 space-y-5">
+        <ConnectionsBanner />
+        <div>{node}</div>
+      </div>
     </>
   );
 
@@ -172,8 +176,15 @@ export default function OverviewPage() {
   if (!campaigns.data) return header;
   if (campaigns.data.length === 0) {
     return body(
-      <EmptyState title="No campaigns yet">
-        Create one on the calling engine with <code className="t-figure rounded-chip bg-sunken px-1">callagent onboard</code>. It appears here as soon as it exists.
+      <EmptyState
+        title="No campaigns yet"
+        action={
+          <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
+            Create your first campaign
+          </Link>
+        }
+      >
+        A campaign holds what the agent says, who it calls and which number it answers.
       </EmptyState>,
     );
   }
@@ -263,6 +274,7 @@ export default function OverviewPage() {
       {header}
 
       <div className="mt-5 space-y-5">
+        <ConnectionsBanner />
         {details.failed.length > 0 && (
           <Banner tone="warn" role="alert" title={`Results for ${details.failed.join(", ")} could not be loaded`}>
             The totals below leave {details.failed.length === 1 ? "it" : "them"} out.

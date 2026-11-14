@@ -8,6 +8,7 @@ import { rulesSchema, type Rules } from "@/lib/api/schemas";
 import { Banner, Button, ErrorState, Field, Input, Loading, NoticeBar, buttonClass, type Notice } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
 import { useAccess } from "@/components/dashboard/access";
+import { InboundPanel, LanguagesPanel } from "@/components/dashboard/CampaignSetup";
 
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 const DAY_TEXT = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" };
@@ -127,8 +128,12 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
   }
 
   return (
-    <form onSubmit={save} noValidate>
+    <div className="space-y-6">
       <NoticeBar notice={notice} onClose={closeNotice} />
+      <LanguagesPanel campaign={name} onSaved={setNotice} />
+      <InboundPanel campaign={name} onSaved={setNotice} />
+      <h2 className="t-eyebrow">Outbound calling rules</h2>
+    <form onSubmit={save} noValidate>
       {data.stop_reason && (
         <div className="mb-5">
           <Banner tone="warn" title="This campaign paused itself">
@@ -227,5 +232,6 @@ export default function SettingsPage({ params }: { params: Promise<{ name: strin
         </div>
       )}
     </form>
+    </div>
   );
 }

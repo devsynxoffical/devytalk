@@ -62,6 +62,8 @@ export const reportSchema = z.object({
   by_playbook_version: z.record(z.string(), groupSchema),
   best_version: z.string().nullable(),
   by_language: z.record(z.string(), groupSchema),
+  /** Calls the agent placed and calls it answered. Absent on engines older than this console. */
+  by_direction: z.record(z.string(), groupSchema).default({}),
   leads: z.object({ total: z.number(), hot: z.number(), warm: z.number(), cold: z.number(), unscored: z.number() }),
 });
 export type Report = z.infer<typeof reportSchema>;
@@ -398,3 +400,25 @@ export const websiteRequestSchema = z.object({
 });
 export type WebsiteRequest = z.infer<typeof websiteRequestSchema>;
 export const websiteRequestListSchema = z.object({ total: z.number(), new: z.number(), requests: z.array(websiteRequestSchema) });
+
+/* ---- setup ---- */
+
+export const statusSchema = z.object({
+  ready_for_calls: z.boolean(),
+  checks: z.array(z.object({ key: z.string(), label: z.string(), purpose: z.string(), ok: z.boolean(), missing: z.array(z.string()) })),
+  from_number: z.string().nullable(),
+  inbound_webhook: z.string().nullable(),
+  languages: z.array(z.object({ code: z.string(), name: z.string() })),
+  website_intake: z.boolean(),
+  default_timezone: z.string(),
+});
+export type EngineStatus = z.infer<typeof statusSchema>;
+
+export const languagesSchema = z.object({
+  languages: z.array(z.string()),
+  localized: z.array(z.string()),
+  supported: z.array(z.object({ code: z.string(), name: z.string() })),
+  provider_gaps: z.array(z.string()),
+  can_localize: z.boolean(),
+});
+export type CampaignLanguages = z.infer<typeof languagesSchema>;

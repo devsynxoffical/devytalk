@@ -426,7 +426,11 @@ test("a test with enough evidence can be promoted, and the tested version goes l
 
 test("a campaign with no calls shows empty states, not zeros dressed up as results", async () => {
   await openCampaign(EMPTY);
-  await expect(page.getByText("No calls yet", { exact: true })).toBeVisible();
+  // Instead of an empty report: what is done and what comes next.
+  const steps = page.getByTestId("getting-started");
+  await expect(steps).toContainText("The agent has a playbook");
+  await expect(steps).toContainText("Import the people to call");
+  await expect(steps).toContainText("Connect the phone, speech and AI providers");
   await expect(page.getByText("No objections have been recorded in reviewed calls yet.")).toBeVisible();
   await expect(page.getByText("No budget is set for this campaign")).toBeVisible();
   await expect(page.getByText("Cost per conversion")).toHaveCount(0);
@@ -695,6 +699,93 @@ test("what a visitor sends through the website's forms reaches the console", asy
   await expect(page.getByRole("button", { name: "Waiting (1)" })).toBeVisible();
   await page.getByRole("group", { name: "Show requests" }).getByRole("button", { name: "Handled" }).click();
   await expect(page.getByTestId("requests").locator("tr", { hasText: "Priya Shah" })).toContainText("Handled by api token");
+});
+
+test("a campaign is created and set up in the console for outbound and inbound calls", async ({ request }) => {
+  const NAME = "Spring outreach";
+  // The overview says plainly that real calls are not possible yet, and Setup says what is missing.
+  await page.goto("/dashboard");
+  await expect(page.getByTestId("connections-banner")).toContainText("4 of 5 connections");
+  await page.getByTestId("connections-banner").getByRole("link", { name: "Open setup" }).click();
+  await expect(page.getByTestId("setup-state")).toContainText("Calls cannot be placed or answered yet");
+  const connections = page.getByTestId("connections");
+  await expect(connections.locator("li", { hasText: "Phone provider (Twilio)" })).toContainText("TWILIO_ACCOUNT_SID");
+  await expect(connections.locator("li", { hasText: "Public address of this engine" })).toContainText("Connected");
+  await expect(page.getByTestId("copy-value")).toHaveText("https://engine.example.test/twilio/inbound");
+
+  // New campaign: the form says what is missing, then creates a campaign with a working playbook.
+  await page.goto("/dashboard/campaigns");
+  await page.getByRole("link", { name: "New campaign" }).click();
+  await page.getByRole("button", { name: "Create campaign" }).click();
+  await expect(alertWith("Give the campaign a name.")).toBeVisible();
+  await expect(alertWith("Say what the agent is offering.")).toBeVisible();
+  await page.getByLabel("Campaign name").fill(NAME);
+  await page.getByLabel("Company name").fill("Northwind Accounting");
+  await page.getByLabel("What the agent offers").fill("A 20-minute demo of fixed-price monthly bookkeeping.");
+  await page.getByLabel("Prices and terms the agent may state (optional)").fill("From 300 dollars per month.");
+  await page.getByLabel("Agent's first name").fill("Sam");
+  await page.getByRole("group", { name: "Also switches to, when the prospect speaks it" }).getByRole("button", { name: "Arabic" }).click();
+  await page.getByRole("button", { name: "Create campaign" }).click();
+  await expect(page.getByRole("heading", { name: NAME, level: 1 })).toBeVisible();
+  await expect(page.getByTestId("getting-started")).toContainText("It speaks English, Arabic.");
+
+  // What the agent will say came from the form, and it is live as version 1.
+  await sections().getByRole("link", { name: "Coach & playbook" }).click();
+  await expect(page.getByTestId("version-1")).toContainText("Live");
+
+  // Languages: add French.
+  await sections().getByRole("link", { name: "Settings" }).click();
+  const languages = panel("Languages");
+  await expect(languages.getByRole("button", { name: "Arabic" })).toHaveAttribute("aria-pressed", "true");
+  await languages.getByRole("button", { name: "French" }).click();
+  await languages.getByRole("button", { name: "Save languages" }).click();
+  await expect(toast("The agent opens in English and switches to Arabic or French when the prospect speaks it.")).toBeVisible();
+  // The engine's default speech recognition is not confirmed for Arabic when it has to follow
+  // the prospect's language. The console says so instead of letting calls go wrong.
+  await expect(languages.getByRole("status")).toContainText("speech recognition is not confirmed for Arabic");
+
+  // Inbound: this campaign answers a number; the page says what to set at the phone provider.
+  const inbound = panel("Inbound calls");
+  await expect(page.getByTestId("inbound-state")).toContainText("Not answering inbound calls");
+  await inbound.getByLabel("Phone number to answer").fill("12");
+  await inbound.getByRole("button", { name: "Answer this number" }).click();
+  await expect(alertWith("Enter the full phone number, with its country code.")).toBeVisible();
+  await inbound.getByLabel("Phone number to answer").fill("+1 (415) 555-0123");
+  await inbound.getByRole("button", { name: "Answer this number" }).click();
+  // Refused, with the reason: the agent could not understand an Arabic-speaking caller.
+  await expect(inbound.getByRole("alert")).toContainText("not confirmed for Arabic");
+  await expect(page.getByTestId("inbound-state")).toContainText("Not answering inbound calls");
+
+  // English and French are confirmed: drop Arabic, and the number is accepted.
+  await languages.getByRole("button", { name: "Arabic" }).click();
+  await languages.getByRole("button", { name: "Save languages" }).click();
+  await expect(toast("The agent opens in English and switches to French when the prospect speaks it.")).toBeVisible();
+  await expect(languages.getByText("speech recognition is not confirmed")).toHaveCount(0);
+  await inbound.getByRole("button", { name: "Answer this number" }).click();
+  await expect(toast("Calls to +14155550123 are answered with this campaign's playbook.")).toBeVisible();
+  await expect(page.getByTestId("inbound-state")).toContainText("Answering");
+  await expect(inbound.getByTestId("copy-value")).toHaveText("https://engine.example.test/twilio/inbound");
+
+  // Someone calls the number. The test plays the phone provider's part and sends the engine
+  // the request the provider would send; no real call exists and no audio is exchanged.
+  const ring = await request.post(`${ENGINE}/twilio/inbound`, { form: { CallSid: "CAe2einbound1", From: "+14155550777", To: "+14155550123" } });
+  expect(await ring.text()).toContain("<Stream"); // the engine answers with this campaign
+
+  await sections().getByRole("link", { name: "Calls" }).click();
+  await page.getByLabel("Direction").selectOption("inbound");
+  const call = page.getByRole("button", { name: /\+14155550777/ }).first();
+  await expect(call).toContainText("On the call");
+  await page.getByLabel("Direction").selectOption("outbound");
+  await expect(page.getByRole("button", { name: /\+14155550777/ })).toHaveCount(0);
+
+  // Stop answering: the number is released.
+  await sections().getByRole("link", { name: "Settings" }).click();
+  await panel("Inbound calls").getByRole("button", { name: "Stop answering" }).click();
+  await page.getByRole("group", { name: "Stop answering inbound calls" }).getByRole("button", { name: "Stop answering" }).click();
+  await expect(toast("This campaign no longer answers inbound calls.")).toBeVisible();
+  await expect(page.getByTestId("inbound-state")).toContainText("Not answering inbound calls");
+  const refused = await request.post(`${ENGINE}/twilio/inbound`, { form: { CallSid: "CAe2einbound2", From: "+14155550777", To: "+14155550123" } });
+  expect(await refused.text()).not.toContain("<Stream");
 });
 
 test("errors from the engine are shown with a way to retry", async () => {
