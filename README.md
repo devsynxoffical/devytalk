@@ -99,7 +99,20 @@ Rules the dashboard keeps:
   people speak.
 
 Configuration, all server-side only: `DEVYTALK_API_URL` (default `http://localhost:8000`);
-`DEVYTALK_INTAKE_TOKEN` (website forms to the engine, see Lead API).
+`DEVYTALK_INTAKE_TOKEN` (website forms to the engine, see Lead API);
+`TRUSTED_PROXY_HOPS` (default 1: how many proxies of your own stand in front of this
+server; the sign-in and form limits count attempts per address as reported by the
+outermost of them, which a visitor cannot choose. 0 when nothing stands in front:
+all visitors then share one limit).
+
+Every response carries security headers (`next.config.ts`): a content policy that
+allows this origin only and refuses framing, plugins and forms posted elsewhere;
+`nosniff`; a referrer policy; HSTS. The content policy allows inline scripts, which
+the framework needs without per-request nonces, so it does not stop a script
+injected into a page; the pages render no user-supplied HTML.
+
+`.github/workflows/ci.yml` runs the type check, the unit tests and the build. The
+browser tests are not in CI: they need the engine's repository.
 
 ### Tests
 

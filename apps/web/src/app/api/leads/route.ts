@@ -1,13 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { fieldErrors, leadSchema, type LeadResponse } from "@/lib/lead-schema";
 import { saveLead } from "@/lib/lead-store";
-import { isRateLimited } from "@/lib/rate-limit";
+import { clientAddress, isRateLimited } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (isRateLimited(ip)) {
+  if (isRateLimited(clientAddress(req.headers))) {
     return NextResponse.json<LeadResponse>({ ok: false, error: "Too many requests. Please try again in a minute." }, { status: 429 });
   }
 

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { callBackend, callBackendPublic, isSameOrigin, SESSION_COOKIE, sessionCookieOptions } from "@/lib/server/backend";
-import { isRateLimited } from "@/lib/rate-limit";
+import { clientAddress, isRateLimited } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,8 +22,7 @@ const sentence = (text: string) => (text ? text[0].toUpperCase() + text.slice(1)
  */
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Request not allowed." }, { status: 403 });
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (isRateLimited(`signin:${ip}`)) {
+  if (isRateLimited(`signin:${clientAddress(request.headers)}`)) {
     return NextResponse.json({ error: "Too many attempts. Wait a minute and try again." }, { status: 429 });
   }
   const parsed = signInSchema.safeParse(await request.json().catch(() => null));

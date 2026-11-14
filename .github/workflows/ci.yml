@@ -1,0 +1,35 @@
+name: console
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: console-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Types
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Known vulnerabilities in dependencies
+        run: npm audit --omit=dev --audit-level=high || echo "::warning::npm audit reported findings; review them"
+      # The browser tests need the calling engine (a separate repository) started with
+      # seed data; they run locally with ENGINE_DIR set (see apps/web/README or docs).
+      # They are not run here until this workflow is given read access to that repository.

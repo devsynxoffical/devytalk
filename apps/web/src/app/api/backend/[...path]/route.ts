@@ -9,6 +9,7 @@ type Context = { params: Promise<{ path: string[] }> };
 
 /** The engine accepts files up to 25 MB; the form fields around the file need a little room. */
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024 + 64 * 1024;
+const MAX_JSON_BYTES = 1024 * 1024;
 
 /**
  * The dashboard's only way to the calling engine. The browser never holds a provider
@@ -37,7 +38,12 @@ async function forward(request: NextRequest, context: Context) {
       init.body = upload;
       init.headers = { "Content-Type": type };
     } else {
+      // Everything the console sends as JSON is small (rules, a playbook, a form).
+      if (Number(request.headers.get("content-length") ?? 0) > MAX_JSON_BYTES) {
+        return NextResponse.json({ detail: "The request is too large." }, { status: 413 });
+      }
       const body = await request.text();
+      if (body.length > MAX_JSON_BYTES) return NextResponse.json({ detail: "The request is too large." }, { status: 413 });
       if (body) {
         init.body = body;
         init.headers = { "Content-Type": "application/json" };
