@@ -432,7 +432,7 @@ export function Drawer({ label, title, subtitle, onClose, children, footer }: { 
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-end md:items-stretch">
-      <div className="absolute inset-0 animate-fade bg-fg/35" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 animate-fade bg-scrim" onClick={onClose} aria-hidden="true" />
       <aside
         ref={panel}
         role="dialog"

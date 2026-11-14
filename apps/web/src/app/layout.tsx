@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Plus_Jakarta_Sans } from "next/font/google";
+import { THEME_BOOT } from "@/lib/theme";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
@@ -19,8 +20,10 @@ export const viewport: Viewport = { themeColor: "#0a1c40" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${plexSans.variable} ${plexMono.variable}`}>
+    // The theme script sets data-theme on <html> before React runs, so the attribute differs from the server's markup on purpose.
+    <html lang="en" className={`${jakarta.variable} ${plexSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <body className="font-sans">
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {children}
       </body>
     </html>

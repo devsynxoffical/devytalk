@@ -7,8 +7,10 @@ import { Activity, Bell, ChevronLeft, ChevronRight, CornerDownLeft, KeyRound, La
 import { backendUrl, useApi } from "@/lib/api/client";
 import { campaignListSchema, jobsSchema, type Campaign, type Me } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
+import { useTheme } from "@/lib/hooks/useTheme";
+import { THEME_CHOICES } from "@/lib/theme";
 import { AccessProvider, ROLE_LABEL, initials, useAccess } from "./access";
-import { Status } from "./ui";
+import { Segmented, Status } from "./ui";
 
 const SECTIONS: [string, string][] = [
   ["", "Performance"],
@@ -85,7 +87,7 @@ function CommandPalette({ campaigns, onClose }: { campaigns: Campaign[]; onClose
 
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center px-3 pt-[12dvh]" role="dialog" aria-modal="true" aria-label="Jump to">
-      <div className="absolute inset-0 animate-fade bg-fg/40" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 animate-fade bg-scrim" onClick={onClose} aria-hidden="true" />
       <div className="relative w-full max-w-xl animate-pop overflow-hidden rounded-overlay bg-surface shadow-overlay">
         <div className="flex items-center gap-2.5 border-b border-line px-4">
           <Search className="size-4 shrink-0 text-fg-3" aria-hidden="true" />
@@ -213,6 +215,11 @@ function Identity({ me }: { me: Me | null }) {
       </p>
     </>
   );
+}
+
+function ThemeSwitch() {
+  const { choice, setChoice } = useTheme();
+  return <Segmented label="Theme" options={THEME_CHOICES} value={choice} onChange={setChoice} />;
 }
 
 function AccountLinks({ me, isAdmin, className }: { me: Me | null; isAdmin: boolean; className: string }) {
@@ -409,6 +416,10 @@ function Frame({ children }: { children: ReactNode }) {
                 <div className="border-b border-line px-4 py-3" data-testid="identity">
                   <Identity me={me} />
                 </div>
+                <div className="border-b border-line px-4 py-3">
+                  <p className="t-eyebrow mb-1.5">Theme</p>
+                  <ThemeSwitch />
+                </div>
                 <div className="p-1.5">
                   <AccountLinks me={me} isAdmin={isAdmin} className="flex w-full items-center gap-2 rounded-control px-2.5 py-2 text-left text-[13.5px] text-fg-2 hover:bg-sunken hover:text-fg" />
                   <button type="button" onClick={signOut} disabled={leaving} className="flex w-full items-center gap-2 rounded-control px-2.5 py-2 text-left text-[13.5px] text-fg-2 hover:bg-sunken hover:text-fg disabled:opacity-50">
@@ -452,9 +463,13 @@ function Frame({ children }: { children: ReactNode }) {
         </ul>
         {menu === "account" && (
           <>
-            <div className="fixed inset-0 -z-10 animate-fade bg-fg/35" onClick={() => setMenu(null)} aria-hidden="true" />
+            <div className="fixed inset-0 -z-10 animate-fade bg-scrim" onClick={() => setMenu(null)} aria-hidden="true" />
             <div role="dialog" aria-label="Account" className="absolute inset-x-0 bottom-full animate-sheet-up rounded-t-overlay border-t border-line bg-surface p-4 shadow-overlay">
               <Identity me={me} />
+              <div className="mt-4">
+                <p className="t-eyebrow mb-1.5">Theme</p>
+                <ThemeSwitch />
+              </div>
               <div className="mt-3 space-y-2">
                 <AccountLinks me={me} isAdmin={isAdmin} className="flex h-11 w-full items-center justify-center gap-2 rounded-control border border-line-strong text-[14px] font-medium text-fg" />
               </div>

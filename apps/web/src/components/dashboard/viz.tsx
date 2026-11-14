@@ -4,23 +4,26 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Colours for data marks. Text never wears these: figures and labels stay in ink, and a
- * coloured mark beside them carries identity.
+ * Colours for data marks. Text never wears these: figures and labels stay in the text
+ * colour, and a coloured mark beside them carries identity.
  *
- * SERIES: bright blue for a measure, deep navy for the one being emphasised (conversions,
- * hot leads). Told apart by lightness, on a light track.
+ * SERIES: bright blue for a measure; for the one being emphasised (conversions, hot
+ * leads) deep navy on light surfaces and white on dark ones. Told apart by lightness.
  * STATUS: reserved for state. Always shown with a word, never as colour alone.
+ *
+ * The values are CSS variables defined on `.app` in globals.css, so both themes share
+ * one definition.
  */
 export const SERIES = {
-  blue: { mark: "#2471e7", track: "#e3ecfb" },
-  navy: { mark: "#0a1c40", track: "#e4e7ee" },
+  blue: { mark: "var(--chart-series-1)", track: "var(--chart-track-1)" },
+  navy: { mark: "var(--chart-series-2)", track: "var(--chart-track-2)" },
 } as const;
 
 export const STATUS = {
-  good: { mark: "#2471e7", track: "#e3ecfb" },
-  warning: { mark: "#e6701e", track: "#eeeeee" },
-  critical: { mark: "#e5281c", track: "#eeeeee" },
-  none: { mark: "#bdbdbd", track: "#efefef" },
+  good: { mark: "var(--chart-series-1)", track: "var(--chart-track-1)" },
+  warning: { mark: "#e6701e", track: "var(--chart-track)" },
+  critical: { mark: "#e5281c", track: "var(--chart-track)" },
+  none: { mark: "var(--chart-mark-none)", track: "var(--chart-track)" },
 } as const;
 
 type Tint = { mark: string; track: string };

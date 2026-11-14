@@ -75,6 +75,7 @@
   --color-on-signal: #ffffff;    /* text and icons on a signal fill */
   --color-accent: #2471e7;       /* bright blue: links, focus rings, secondary data */
   --color-accent-strong: #1a5fcf;
+  --color-scrim: rgb(0 0 0 / 0.38); /* behind drawers, sheets and the command palette */
 
   /* A state is a coloured marker beside black text. Only errors keep coloured text. */
   --color-pos: #000000;   --color-pos-bg: #e6effd;   --color-pos-mark: #2471e7;
@@ -106,7 +107,7 @@
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes sheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   @keyframes draw { from { stroke-dashoffset: var(--draw-length, 2000); } to { stroke-dashoffset: 0; } }
-  @keyframes live { 0% { box-shadow: 0 0 0 0 rgb(57 255 20 / 0.6); } 100% { box-shadow: 0 0 0 7px rgb(57 255 20 / 0); } }
+  @keyframes live { 0% { box-shadow: 0 0 0 0 rgb(36 113 231 / 0.55); } 100% { box-shadow: 0 0 0 7px rgb(36 113 231 / 0); } }
 
   --animate-marquee: marquee 40s linear infinite;
   --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
@@ -256,6 +257,57 @@
   font-feature-settings: "ss01", "cv05";
   -webkit-tap-highlight-color: transparent;
 }
+/* Colours used by CSS and charts directly, not through a utility class. */
+.app {
+  --row-hover: #f7f7f7;
+  --sheen: #fbfbfb;
+  --chart-series-1: #2471e7; /* a measure */
+  --chart-series-2: #0a1c40; /* the emphasised measure */
+  --chart-track-1: #e3ecfb;
+  --chart-track-2: #e4e7ee;
+  --chart-track: #eeeeee;
+  --chart-mark-none: #bdbdbd;
+  --chart-grid: #eeeeee;
+  --chart-axis: #c4c4c4;
+}
+
+/*
+ * Dark theme. Same palette, turned over: deep navy surfaces, white type, bright blue
+ * actions, soft blue links, warm orange warnings. Chosen in the account menu and kept
+ * in the browser; the choice is applied to <html data-theme> before the first paint.
+ */
+[data-theme="dark"] .app {
+  color-scheme: dark;
+  --color-paper: #06122b;
+  --color-surface: #0a1c40;
+  --color-sunken: #12284f;
+  --color-line: #1c3160;
+  --color-line-strong: #364b7c;
+  --color-fg: #ffffff;
+  --color-fg-2: #d5ddee;
+  --color-fg-3: #93a3c5;
+  --color-rail: #0a1c40;
+  --color-rail-2: #12284f;
+  --color-rail-fg: #d5ddee;
+  --color-deep: #14295a;
+  --color-accent: #5bb3fd; /* links and focus rings: bright blue is too dim as text on navy */
+  --color-scrim: rgb(0 0 0 / 0.6);
+  --color-pos: #ffffff;  --color-pos-bg: #143168;
+  --color-warn: #ffffff; --color-warn-bg: #4a2a12;
+  --color-crit: #ff8f85; --color-crit-bg: #4c1815; --color-crit-mark: #f0483d;
+  --color-info: #ffffff; --color-info-bg: #123560;
+  --shadow-overlay: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.7);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4);
+  --row-hover: #10244c;
+  --sheen: #1a3263;
+  --chart-series-2: #ffffff;
+  --chart-track-1: #17356e;
+  --chart-track-2: #26395f;
+  --chart-track: #1c3160;
+  --chart-mark-none: #5a6b90;
+  --chart-grid: #16294f;
+  --chart-axis: #364b7c;
+}
 .app :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 3px; }
 .app ::selection { background: #2471e7; color: #fff; }
 .app h1, .app h2, .app h3 { letter-spacing: -0.011em; }
@@ -274,7 +326,7 @@
 /* Loading placeholder with a slow sheen. */
 @utility skeleton {
   border-radius: var(--radius-chip);
-  background: linear-gradient(90deg, var(--color-sunken) 25%, #fbfbfb 50%, var(--color-sunken) 75%);
+  background: linear-gradient(90deg, var(--color-sunken) 25%, var(--sheen, #fbfbfb) 50%, var(--color-sunken) 75%);
   background-size: 200% 100%;
   animation: var(--animate-sheen);
 }
@@ -293,7 +345,7 @@
 .dt td { padding: 9px 12px; border-bottom: 1px solid var(--color-line); font-size: 13px; line-height: 18px; vertical-align: top; color: var(--color-fg-2); }
 .dt tbody tr:last-child td { border-bottom: 0; }
 .dt tbody tr[data-clickable="true"] { cursor: pointer; transition: background-color 120ms; }
-.dt tbody tr[data-clickable="true"]:hover { background: #f7f7f7; }
+.dt tbody tr[data-clickable="true"]:hover { background: var(--row-hover, #f7f7f7); }
 .dt .num { text-align: right; font-family: var(--font-figure); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .dt th.num { font-family: inherit; letter-spacing: 0.06em; }
 @media (width < 40rem) {

@@ -162,6 +162,7 @@ function Sources({ campaign, documents, onChanged }: { campaign: string; documen
     }
   }
 
+  const passages = documents.filter((d) => d.status === "ready").reduce((n, d) => n + d.passages, 0);
   const state = (d: TrainingDocument) => STATE[d.status] ?? { text: d.status, tone: "neutral" as Tone };
   const columns: Column<TrainingDocument>[] = [
     {
@@ -211,7 +212,7 @@ function Sources({ campaign, documents, onChanged }: { campaign: string; documen
   ];
 
   return (
-    <Panel title="Sources" description={`${count(documents.length)} ${documents.length === 1 ? "source" : "sources"} · ${count(documents.filter((d) => d.status === "ready").reduce((n, d) => n + d.passages, 0))} passages the agent can look up`} flush>
+    <Panel title="Sources" description={`${count(documents.length)} ${documents.length === 1 ? "source" : "sources"} · ${count(passages)} ${passages === 1 ? "passage" : "passages"} the agent can look up`} flush>
       {removing && (
         <div className="border-b border-line p-3">
           <Confirm label={`Remove ${removing.name}`} confirmLabel="Remove source" tone="danger" busy={busy} error={error} onConfirm={() => remove(removing)} onCancel={() => setRemoving(null)}>

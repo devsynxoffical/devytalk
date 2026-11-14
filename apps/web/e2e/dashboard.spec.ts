@@ -704,6 +704,30 @@ test("phones get their own navigation and layouts, with nothing scrolling sidewa
   await context.close();
 });
 
+test("the console can be switched to a dark theme, and the choice is remembered", async () => {
+  const canvas = () => page.evaluate(() => getComputedStyle(document.querySelector(".app")!).backgroundColor);
+  await page.goto("/dashboard");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light"); // light unless chosen otherwise
+  expect(await canvas()).toBe("rgb(255, 255, 255)");
+
+  await page.getByRole("button", { name: "Account" }).click();
+  await page.getByRole("group", { name: "Theme" }).getByRole("button", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(await canvas()).toBe("rgb(6, 18, 43)"); // deep navy
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".app h1")!).color)).toBe("rgb(255, 255, 255)");
+
+  await page.reload(); // applied before the page paints, not after it loads
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByTestId("tile-calls")).toContainText("154");
+  expect(await canvas()).toBe("rgb(6, 18, 43)");
+
+  await page.getByRole("button", { name: "Account" }).click();
+  await expect(page.getByRole("group", { name: "Theme" }).getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("group", { name: "Theme" }).getByRole("button", { name: "Light" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await canvas()).toBe("rgb(255, 255, 255)");
+});
+
 test("signing out closes the console again", async () => {
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Account" }).click();
