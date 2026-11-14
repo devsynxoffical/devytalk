@@ -128,7 +128,7 @@ export function InvitationList({ version, onChanged }: { version: number; onChan
             <div className="min-w-0">
               <p className="truncate text-[13.5px] font-medium text-fg">{i.name ? `${i.name} · ${i.email}` : i.email}</p>
               <p className="t-meta">
-                {ROLE_LABEL[i.role]} · invited by {i.created_by || "the operator"}
+                {ROLE_LABEL[i.role]} · invited by {!i.created_by || i.created_by === "api token" ? "the operator" : i.created_by}
                 {i.state === "pending" ? ` · works until ${dateTime(i.expires_at)}` : ""}
               </p>
             </div>

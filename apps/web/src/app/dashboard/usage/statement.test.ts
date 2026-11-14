@@ -6,6 +6,8 @@ describe("usage statement", () => {
     expect(usd("12.3400")).toBe("$12.34");
     expect(usd("0.0150")).toBe("$0.015");
     expect(usd("0.3200")).toBe("$0.32");
+    expect(usd("0.4846")).toBe("$0.48"); // from ten cents up, cents are enough
+    expect(usd("0.0999")).toBe("$0.0999");
     expect(usd("-0.1000")).toBe("-$0.10");
     expect(usd("0.0000")).toBe("$0.00");
   });

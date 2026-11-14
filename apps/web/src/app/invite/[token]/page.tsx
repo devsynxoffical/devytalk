@@ -38,7 +38,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         </span>
         {looked.state === "ok" ? (
           <>
-            <h1 className="t-title text-fg">{looked.preview.purpose === "join" ? `Join ${looked.preview.organization || "the console"}` : "Choose a new password"}</h1>
+            <h1 className="t-title text-fg">{looked.preview.purpose === "join" ? `Join ${!looked.preview.organization || looked.preview.organization === "default" ? "the console" : looked.preview.organization}` : "Choose a new password"}</h1>
             <p className="mt-1 text-[13.5px] text-fg-2">
               {looked.preview.purpose === "join" ? (
                 <>

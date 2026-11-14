@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
-import { count } from "@/lib/api/format";
-import { statementListSchema, statementSchema, type Statement } from "@/lib/api/schemas";
+import { count, percent } from "@/lib/api/format";
+import { economicsSchema, statementListSchema, statementSchema, type Economics, type Statement } from "@/lib/api/schemas";
 import { Banner, DataTable, EmptyState, ErrorState, KeyValues, Loading, PageHeader, Panel, Select, Tag, buttonClass, type Column } from "@/components/dashboard/ui";
 import { basisName, monthName, usd } from "./statement";
 
@@ -32,7 +32,7 @@ function StatementView({ period }: { period: string }) {
             <Tag tone={data.status === "open" ? "warn" : "neutral"}>{data.status === "open" ? "Still open" : "Final"}</Tag>
           </span>
         }
-        description={`Statement ${data.number} · ${data.organization.name || "this organization"} · calendar month in UTC`}
+        description={`Statement ${data.number} · ${data.organization.name === "default" ? "Default organization" : data.organization.name || "this organization"} · calendar month in UTC`}
         actions={
           <a href={backendUrl(["usage", "statements", period], { format: "csv" })} download className={buttonClass("secondary")}>
             <Download className="size-3.5" aria-hidden="true" />
@@ -75,6 +75,60 @@ function StatementView({ period }: { period: string }) {
   );
 }
 
+type CampaignCost = Economics["by_campaign"][number];
+
+/** A cost per meeting, with a mark when too few meetings stand behind it. */
+function PerMeeting({ figures, least }: { figures: Economics["total"]; least: number }) {
+  if (figures.cost_per_meeting_usd === null) return <span className="text-fg-3">No meeting yet</span>;
+  return (
+    <span className="inline-flex flex-wrap items-center justify-end gap-2">
+      <span className="t-figure font-medium text-fg">{usd(figures.cost_per_meeting_usd)}</span>
+      {!figures.enough_meetings && <Tag tone="warn">Fewer than {least} meetings</Tag>}
+    </span>
+  );
+}
+
+/** What a result cost over the last 30 days: counted from calls, summed from the ledger. */
+function CostPerResult() {
+  const { data, error, loading, reload } = useApi(backendUrl(["economics"], { days: 30 }), economicsSchema);
+  if (loading && !data) return <Loading what="Loading costs" strip={false} rows={3} />;
+  if (error) return <ErrorState message={error.message} onRetry={reload} />;
+  if (!data || data.total.calls === 0) return null;
+  const t = data.total;
+  const columns: Column<CampaignCost>[] = [
+    { key: "campaign", label: "Campaign", primary: true, sortValue: (r) => r.campaign.toLowerCase(), render: (r) => <span className="font-medium text-fg">{r.campaign || "Not tied to a campaign"}</span> },
+    { key: "calls", label: "Calls", numeric: true, sortValue: (r) => r.calls, render: (r) => count(r.calls) },
+    { key: "connected", label: "Connected", numeric: true, sortValue: (r) => r.connect_rate, render: (r) => percent(r.connect_rate) },
+    { key: "meetings", label: "Meetings", numeric: true, sortValue: (r) => r.meetings, render: (r) => count(r.meetings) },
+    { key: "spend", label: "Spent", numeric: true, sortValue: (r) => Number(r.spend_usd), render: (r) => usd(r.spend_usd) },
+    { key: "per-call", label: "Per connected call", numeric: true, sortValue: (r) => Number(r.cost_per_connected_call_usd), render: (r) => usd(r.cost_per_connected_call_usd) },
+    { key: "per-meeting", label: "Per meeting", numeric: true, sortValue: (r) => Number(r.cost_per_meeting_usd), render: (r) => <PerMeeting figures={r} least={data.min_meetings_for_a_cost} /> },
+  ];
+  return (
+    <Panel title="What a result cost" description="The last 30 days. Counted from calls and summed from the same lines as the statement." flush>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 px-4 py-4 sm:grid-cols-4" data-testid="economics">
+        {(
+          [
+            ["Per call placed", usd(t.cost_per_call_usd)],
+            ["Per connected call", usd(t.cost_per_connected_call_usd)],
+            ["Per billed minute", usd(t.cost_per_minute_usd)],
+            ["Per booked meeting", <PerMeeting key="m" figures={t} least={data.min_meetings_for_a_cost} />],
+          ] as const
+        ).map(([name, value]) => (
+          <div key={name}>
+            <dt className="t-eyebrow">{name}</dt>
+            <dd className="t-figure mt-0.5 text-[15px] font-medium text-fg">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="t-meta border-t border-line px-4 py-2.5">
+        {count(t.calls)} calls, {percent(t.connect_rate)} connected, {count(t.meetings)} meetings.{t.ai_share ? ` AI is ${percent(t.ai_share)} of the cost.` : ""} Every call is counted in the cost of a meeting, the unanswered ones included.
+      </p>
+      {data.by_campaign.length > 1 && <DataTable columns={columns} rows={data.by_campaign} rowKey={(r) => r.campaign_id ?? 0} caption="Cost per result by campaign" testId="economics-campaigns" />}
+    </Panel>
+  );
+}
+
 export default function UsagePage() {
   const { data, error, loading, reload } = useApi(backendUrl(["usage", "statements"]), statementListSchema);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -104,7 +158,10 @@ export default function UsagePage() {
       ) : data && data.length === 0 ? (
         <EmptyState title="No usage yet">The first call writes the first line. Each month then gets a statement here.</EmptyState>
       ) : period ? (
-        <StatementView key={period} period={period} />
+        <>
+          <StatementView key={period} period={period} />
+          <CostPerResult />
+        </>
       ) : null}
     </div>
   );

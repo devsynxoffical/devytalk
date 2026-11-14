@@ -90,6 +90,24 @@ function Detail({ row, detail }: { row: CallRow; detail: CallDetail }) {
         </Banner>
       )}
 
+      {detail.summary.handover && (
+        <section data-testid="handover">
+          <Heading>Handed to a person</Heading>
+          <p className="text-[13.5px] leading-relaxed text-fg">{detail.summary.handover.agent_note || "The agent left no note for the colleague."}</p>
+          {detail.summary.handover.prospect_last_said.length > 0 && (
+            <>
+              <p className="t-eyebrow mt-3">The last things they said</p>
+              <ul className="mt-1 space-y-1 text-[13px] text-fg-2">
+                {detail.summary.handover.prospect_last_said.map((line, i) => (
+                  <li key={i}>“{line}”</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {detail.summary.handover.seconds_into_call !== null && <p className="t-meta mt-2">Transferred {duration(detail.summary.handover.seconds_into_call)} into the call.</p>}
+        </section>
+      )}
+
       {review && (
         <section>
           <Heading>Assessment</Heading>

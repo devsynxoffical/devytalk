@@ -1,8 +1,8 @@
-/** Ledger amounts are exact decimals sent as text. Small ones keep their fractions of a cent. */
+/** Ledger amounts are exact decimals sent as text. Those under ten cents keep their fractions of a cent. */
 export function usd(amount: string | null | undefined): string {
   const value = Number(amount);
   if (amount === null || amount === undefined || amount === "" || !Number.isFinite(value)) return "–";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: Math.abs(value) < 1 ? 4 : 2 }).format(value);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: value !== 0 && Math.abs(value) < 0.1 ? 4 : 2 }).format(value);
 }
 
 /** "2026-11" as a person reads it. */

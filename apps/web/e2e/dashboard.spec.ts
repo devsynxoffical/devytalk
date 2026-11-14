@@ -1153,6 +1153,19 @@ test("usage is read month by month, adds up to its lines, and belongs to one org
   await expect(page.getByTestId("statement-campaigns")).toContainText(DENTAL);
   await expect(page.getByRole("link", { name: "Every line (CSV)" })).toHaveAttribute("href", `/api/backend/usage/statements/${period}?format=csv`);
 
+  // What a result cost: the same lines, divided by what was counted. The engine's own figures, not the console's arithmetic.
+  const economics = (await fromPage(page, "GET", "/api/backend/economics?days=30")).body as unknown as {
+    total: { calls: number; meetings: number; cost_per_meeting_usd: string | null; enough_meetings: boolean; cost_per_call_usd: string | null };
+    by_campaign: { spend_usd: string }[];
+    by_week: { calls: number }[];
+  };
+  expect(economics.total.calls).toBeGreaterThan(0);
+  expect(economics.by_week.reduce((n, w) => n + w.calls, 0)).toBe(economics.total.calls); // the weeks are the whole
+  await expect(page.getByTestId("economics")).toContainText("Per booked meeting");
+  await expect(page.getByTestId("economics")).toContainText(economics.total.cost_per_meeting_usd === null ? "No meeting yet" : "$");
+  if (economics.total.cost_per_meeting_usd !== null && !economics.total.enough_meetings) await expect(page.getByTestId("economics")).toContainText("Fewer than 5 meetings");
+  if (economics.by_campaign.length > 1) await expect(page.getByTestId("economics-campaigns")).toContainText(DENTAL);
+
   // Bolt placed no calls: it has no statement, and sees nothing of the first organization's.
   const bolt = await signedInAs(browser, request, "bo@bolt.example", "bolt first password");
   await bolt.tab.goto("/dashboard/usage");

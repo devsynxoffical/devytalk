@@ -29,6 +29,10 @@ const groupSchema = z.object({
   conversions: z.number(),
   conversion_rate: rate,
   average_quality: z.number().nullable(),
+  /** How many reviewed calls the average is over. */
+  reviewed: z.number().default(0),
+  spend_usd: z.number().default(0),
+  cost_per_conversion: z.number().nullable().default(null),
   enough_data: z.boolean(),
 });
 
@@ -60,6 +64,8 @@ export const reportSchema = z.object({
   missed_opportunities: z.array(z.object({ text: z.string(), calls: z.number() })),
   unsupported_statements: z.array(z.object({ call_run_id: z.number(), statement: z.string() })),
   by_playbook_version: z.record(z.string(), groupSchema),
+  /** Each playbook version week by week, oldest first. Absent on engines older than this console. */
+  quality_by_week: z.array(groupSchema.extend({ week: z.string(), playbook_version: z.string() })).default([]),
   best_version: z.string().nullable(),
   by_language: z.record(z.string(), groupSchema),
   /** Calls the agent placed and calls it answered. Absent on engines older than this console. */
@@ -301,6 +307,18 @@ export const callDetailSchema = z.object({
       review: reviewSchema.optional(),
       agent_outcome: z.object({ summary: z.string().optional(), next_step: z.string().optional() }).passthrough().optional(),
       latency: z.record(z.string(), z.unknown()).optional(),
+      /** What the colleague who took the call over was told. Present only on transferred calls. */
+      handover: z
+        .object({
+          name: z.string().default(""),
+          company: z.string().default(""),
+          agent_note: z.string().default(""),
+          prospect_last_said: z.array(z.string()).default([]),
+          meetings_booked: z.array(z.string()).default([]),
+          seconds_into_call: z.number().nullable().default(null),
+        })
+        .nullable()
+        .optional(),
     })
     .passthrough()
     .default({}),
@@ -543,4 +561,29 @@ export const statementSchema = z.object({
   what_this_is: z.string().default(""),
 });
 export type Statement = z.infer<typeof statementSchema>;
+
+/** Money is exact decimal text, or null when there is nothing to divide by. */
+const economicsFigures = z.object({
+  calls: z.number(),
+  connected: z.number(),
+  meetings: z.number(),
+  billed_minutes: z.string(),
+  connect_rate: z.number().nullable(),
+  meeting_rate: z.number().nullable(),
+  spend_usd: z.string().nullable(),
+  ai_share: z.number().nullable(),
+  cost_per_call_usd: z.string().nullable(),
+  cost_per_connected_call_usd: z.string().nullable(),
+  cost_per_minute_usd: z.string().nullable(),
+  cost_per_meeting_usd: z.string().nullable(),
+  /** False when a cost per meeting rests on too few meetings to rely on. */
+  enough_meetings: z.boolean(),
+});
+export const economicsSchema = z.object({
+  total: economicsFigures,
+  by_campaign: z.array(economicsFigures.extend({ campaign_id: z.number().nullable(), campaign: z.string().default("") })).default([]),
+  by_week: z.array(economicsFigures.extend({ week: z.string() })).default([]),
+  min_meetings_for_a_cost: z.number().default(5),
+});
+export type Economics = z.infer<typeof economicsSchema>;
 

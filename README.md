@@ -101,6 +101,14 @@ Rules the dashboard keeps:
 - **Usage**: what the organization used, month by month, from the engine's ledger:
   calls, AI and corrections, by campaign, with every line as CSV. A month that is
   over does not change. It is a statement of usage, not a tax invoice, and says so.
+  Below it, what a result cost over the last 30 days: per call, per connected call,
+  per minute and per booked meeting, in total and by campaign. A cost per meeting
+  that rests on fewer than five meetings is marked.
+- **Per playbook version**: a campaign's performance page gives each version its
+  agent quality and cost per conversion, and follows the versions week by week. A
+  week with too few answered calls is shown and marked.
+- **A transferred call** shows what the colleague who took over was told: the
+  agent's note and the last things the person said.
 - **Invitations**: on the Team screen an admin makes a one-time link for a person
   and passes it on; at `/invite/…` the person chooses their own password and is
   signed in. The same kind of link resets a forgotten password and signs the account

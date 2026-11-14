@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { backendUrl, useApi } from "@/lib/api/client";
-import { budgetUse, count, label, languageName, money, percent } from "@/lib/api/format";
+import { DASH, budgetUse, count, label, languageName, money, percent } from "@/lib/api/format";
 import { campaignSchema, reportSchema, rulesSchema, type Report, type Rules } from "@/lib/api/schemas";
 import { GettingStarted } from "@/components/dashboard/CampaignSetup";
 import { Banner, DataTable, EmptyState, ErrorState, KeyValues, Loading, Meter, Metric, MetricStrip, Panel, Tag, type Column } from "@/components/dashboard/ui";
@@ -67,6 +67,26 @@ function Breakdown({ title, description, rows, empty }: { title: string; descrip
   );
 }
 
+type Week = Report["quality_by_week"][number];
+
+/** Each playbook version week by week: whether quality and results moved when the playbook did. */
+function Weeks({ weeks }: { weeks: Week[] }) {
+  const columns: Column<Week>[] = [
+    { key: "week", label: "Week of", primary: true, sortValue: (w) => w.week, render: (w) => <span className="t-figure font-medium text-fg">{w.week}</span> },
+    { key: "version", label: "Playbook", sortValue: (w) => w.playbook_version, render: (w) => (w.playbook_version === "unknown" ? "Not tracked" : `Version ${w.playbook_version}`) },
+    { key: "answered", label: "Answered", numeric: true, sortValue: (w) => w.answered, render: (w) => count(w.answered) },
+    { key: "rate", label: "Conversion rate", numeric: true, sortValue: (w) => w.conversion_rate, render: (w) => percent(w.conversion_rate) },
+    { key: "quality", label: "Agent quality", numeric: true, sortValue: (w) => w.average_quality, render: (w) => (w.average_quality === null ? DASH : `${w.average_quality.toFixed(1)} / 10`) },
+    { key: "cost", label: "Cost per conversion", numeric: true, sortValue: (w) => w.cost_per_conversion, render: (w) => money(w.cost_per_conversion) },
+    { key: "sample", label: "Sample", render: (w) => (w.enough_data ? <Tag tone="pos">Enough to read</Tag> : <Tag tone="warn">Too few calls</Tag>) },
+  ];
+  return (
+    <Panel title="Week by week" description="Each playbook version in the weeks it took calls. A week with fewer than 10 answered calls is shown and marked: it says little." flush>
+      <DataTable columns={columns} rows={weeks} rowKey={(w) => `${w.week}-${w.playbook_version}`} caption="Results per playbook version by week" testId="weeks" initialSort={{ key: "week", descending: true }} />
+    </Panel>
+  );
+}
+
 function Groups({ title, description, groups, nameOf, best }: { title: string; description: string; groups: Report["by_language"]; nameOf: (key: string) => string; best?: string | null }) {
   const rows: Group[] = Object.entries(groups).map(([key, g]) => ({ ...g, key }));
   const columns: Column<Group>[] = [
@@ -85,6 +105,8 @@ function Groups({ title, description, groups, nameOf, best }: { title: string; d
     { key: "answered", label: "Answered", numeric: true, sortValue: (g) => g.answered, render: (g) => count(g.answered) },
     { key: "conversions", label: "Conversions", numeric: true, sortValue: (g) => g.conversions, render: (g) => count(g.conversions) },
     { key: "rate", label: "Conversion rate", numeric: true, sortValue: (g) => g.conversion_rate, render: (g) => percent(g.conversion_rate) },
+    { key: "quality", label: "Agent quality", numeric: true, sortValue: (g) => g.average_quality, render: (g) => (g.average_quality === null ? DASH : `${g.average_quality.toFixed(1)} / 10`) },
+    { key: "cost", label: "Cost per conversion", numeric: true, sortValue: (g) => g.cost_per_conversion, render: (g) => money(g.cost_per_conversion) },
     { key: "sample", label: "Sample", render: (g) => (g.enough_data ? <Tag tone="pos">Enough to compare</Tag> : <Tag tone="warn">Too few calls</Tag>) },
   ];
   return (
@@ -186,6 +208,7 @@ campaign.data ? <GettingStarted campaign={campaign.data} /> : <EmptyState title=
         nameOf={(key) => (key === "unknown" ? "Before versions were tracked" : `Version ${key}`)}
         best={r.best_version}
       />
+      {r.quality_by_week.length > 1 && <Weeks weeks={r.quality_by_week} />}
       <Groups title="By language" description="The language the prospect mostly spoke." groups={r.by_language} nameOf={languageName} />
       {Object.keys(r.by_direction).length > 1 && <Groups title="Outbound and inbound" description="Calls the agent placed, and calls it answered on this campaign's number." groups={r.by_direction} nameOf={(key) => (key === "inbound" ? "Inbound" : "Outbound")} />}
 
