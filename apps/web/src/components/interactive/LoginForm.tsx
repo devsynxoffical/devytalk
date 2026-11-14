@@ -2,11 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { buttonClass } from "@/components/ui/Button";
-
-const inputClass =
-  "w-full rounded-xl border border-ink-200 px-4 py-3 font-mono text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100";
+import { Button, Field, Input } from "@/components/dashboard/ui";
 
 /** Only same-site paths are followed after sign-in, so a crafted link cannot send someone elsewhere. */
 function safeNext(value: string | null): string {
@@ -52,35 +48,18 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-4" noValidate>
-      <div>
-        <label htmlFor="login-token" className="mb-1.5 block text-sm font-semibold text-ink-700">
-          Access token
-        </label>
-        <input
-          id="login-token"
-          type="password"
-          autoComplete="current-password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          aria-invalid={!!error}
-          aria-describedby={error ? "login-error" : "login-help"}
-          className={inputClass}
-        />
-        <p id="login-help" className="mt-1.5 text-xs text-ink-500">
-          The API token of your calling engine (the <code>API_TOKEN</code> setting, or the <code>api_token</code> file in its data folder).
-        </p>
-      </div>
+    <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
+      <Field label="Access token" hint={error ? undefined : "The API token of your calling engine: the API_TOKEN setting, or the api_token file in its data folder."}>
+        <Input type="password" autoComplete="current-password" value={token} onChange={(e) => setToken(e.target.value)} aria-invalid={!!error} className="t-figure" autoFocus />
+      </Field>
       {error && (
-        <p id="login-error" className="flex gap-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700" role="alert">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <p className="rounded-control bg-crit-bg px-3 py-2 text-[13px] font-medium text-crit" role="alert">
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className={buttonClass("primary", "lg", "w-full")}>
-        {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+      <Button type="submit" variant="primary" busy={busy} className="w-full">
         Sign in
-      </button>
+      </Button>
     </form>
   );
 }

@@ -1,60 +1,65 @@
 "use client";
 
 import { use, useCallback, useState } from "react";
-import { Lightbulb, Minus, Plus, Sparkles } from "lucide-react";
+import { Minus, Plus, Sparkles } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
 import { coachResultSchema, versionDiffSchema, versionListSchema, versionSchema, type CoachResult, type Version } from "@/lib/api/schemas";
-import { Button, Card, CardTitle, EmptyState, ErrorState, Loading, NoticeBar, Pill, type Notice, type Tone } from "@/components/dashboard/ui";
+import { Banner, Button, Confirm, EmptyState, ErrorState, Field, Loading, NoticeBar, Panel, Skeleton, Status, Textarea, type Notice, type Tone } from "@/components/dashboard/ui";
 
-const STATUS: Record<Version["status"], { text: string; tone: Tone }> = {
-  active: { text: "Live", tone: "green" },
-  draft: { text: "Awaiting your approval", tone: "amber" },
-  archived: { text: "Earlier version", tone: "gray" },
-  rejected: { text: "Rejected", tone: "red" },
+const STATE: Record<Version["status"], { text: string; tone: Tone }> = {
+  active: { text: "Live", tone: "pos" },
+  draft: { text: "Awaiting your approval", tone: "warn" },
+  archived: { text: "Earlier version", tone: "neutral" },
+  rejected: { text: "Rejected", tone: "crit" },
 };
 
 const SOURCES: Record<string, string> = {
   coach: "Proposed by the AI coach",
   training: "Built from your documents",
   onboarding: "Written during setup",
+  onboard: "Written during setup",
   import: "Imported",
   manual: "Edited by hand",
+  api: "Sent through the API",
   existing: "In use before version history",
 };
 
 // The dashboard has no personal accounts yet, so approvals are recorded against the dashboard.
 const APPROVER = "dashboard";
-
-function failure(error: unknown): string {
-  return error instanceof ApiError ? error.message : "Something went wrong. Try again.";
-}
+const failure = (error: unknown) => (error instanceof ApiError ? error.message : "Something went wrong. Try again.");
 
 function Diff({ campaign, version }: { campaign: string; version: number }) {
   const { data, error, loading, reload } = useApi(backendUrl(["campaigns", campaign, "versions", version, "diff"]), versionDiffSchema);
-  if (loading && !data) return <Loading what="Comparing with the live version" />;
+  if (loading && !data)
+    return (
+      <div className="space-y-2" role="status">
+        <span className="sr-only">Comparing with the live version…</span>
+        <Skeleton className="w-1/3" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    );
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
   if (!data) return null;
-  if (data.changes.length === 0) return <p className="text-sm text-ink-500">This version says the same as the live one in every part that is compared.</p>;
+  if (data.changes.length === 0) return <p className="text-[13px] text-fg-2">This version says the same as the live one in every part that is compared.</p>;
   return (
-    <div className="space-y-4" data-testid="version-diff">
-      <p className="text-sm text-ink-500">
-        Compared with {data.compared_with === null ? "the live playbook" : `version ${data.compared_with}, which is live`}.
-      </p>
+    <div className="animate-rise space-y-4" data-testid="version-diff">
+      <p className="t-meta">Compared with {data.compared_with === null ? "the live playbook" : `version ${data.compared_with}, which is live`}.</p>
       {data.changes.map((change) => (
         <div key={change.field}>
-          <p className="text-sm font-semibold text-ink-900">{change.label}</p>
-          <ul className="mt-1.5 space-y-1">
+          <p className="t-eyebrow mb-1.5">{change.label}</p>
+          <ul className="overflow-hidden rounded-control border border-line text-[13px]">
             {change.removed.map((line) => (
-              <li key={`r-${line}`} className="flex gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-900">
-                <Minus className="mt-0.5 size-4 shrink-0" aria-label="Removed" />
-                <span className="break-words line-through decoration-red-300">{line}</span>
+              <li key={`r-${line}`} className="flex gap-2 border-b border-line bg-crit-bg/60 px-3 py-2 last:border-0">
+                <Minus className="mt-0.5 size-3.5 shrink-0 text-crit" aria-label="Removed" />
+                <span dir="auto" className="break-words text-fg-2 line-through decoration-crit/40">{line}</span>
               </li>
             ))}
             {change.added.map((line) => (
-              <li key={`a-${line}`} className="flex gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900">
-                <Plus className="mt-0.5 size-4 shrink-0" aria-label="Added" />
-                <span className="break-words">{line}</span>
+              <li key={`a-${line}`} className="flex gap-2 border-b border-line bg-pos-bg/60 px-3 py-2 last:border-0">
+                <Plus className="mt-0.5 size-3.5 shrink-0 text-pos" aria-label="Added" />
+                <span dir="auto" className="break-words text-fg">{line}</span>
               </li>
             ))}
           </ul>
@@ -64,17 +69,16 @@ function Diff({ campaign, version }: { campaign: string; version: number }) {
   );
 }
 
-type Pending = "approve" | "reject" | null;
-
-function VersionCard({ campaign, version, onChanged }: { campaign: string; version: Version; onChanged: (notice: Notice) => void }) {
+function VersionPanel({ campaign, version, onChanged }: { campaign: string; version: Version; onChanged: (notice: Notice) => void }) {
   const [showDiff, setShowDiff] = useState(false);
-  const [pending, setPending] = useState<Pending>(null);
+  const [pending, setPending] = useState<"approve" | "reject" | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const status = STATUS[version.status];
+  const state = STATE[version.status];
   const blocked = version.blocking_questions.length > 0;
   const rollback = version.status === "archived";
+  const cancel = () => (setPending(null), setError(null));
 
   async function decide(action: "approve" | "reject") {
     setBusy(true);
@@ -85,10 +89,7 @@ function VersionCard({ campaign, version, onChanged }: { campaign: string; versi
         body: action === "approve" ? { approved_by: APPROVER } : { approved_by: APPROVER, reason: reason.trim() },
       });
       setPending(null);
-      onChanged({
-        kind: "success",
-        text: action === "reject" ? `Version ${version.version} was rejected. Calls are unchanged.` : `Version ${version.version} is now live. New calls use it.`,
-      });
+      onChanged({ kind: "success", text: action === "reject" ? `Version ${version.version} was rejected. Calls are unchanged.` : `Version ${version.version} is now live. New calls use it.` });
     } catch (e) {
       setError(failure(e));
     } finally {
@@ -97,63 +98,56 @@ function VersionCard({ campaign, version, onChanged }: { campaign: string; versi
   }
 
   return (
-    <Card className={version.status === "active" ? "border-brand-300" : undefined}>
-      <div className="flex flex-wrap items-start justify-between gap-3" data-testid={`version-${version.version}`}>
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-ink-900">Version {version.version}</h3>
-            <Pill tone={status.tone}>{status.text}</Pill>
-          </div>
-          <p className="mt-0.5 text-sm text-ink-500">
-            {SOURCES[version.source] ?? version.source} · {dateTime(version.created_at)}
-            {version.status === "active" && version.activated_at ? ` · live since ${dateTime(version.activated_at)}` : ""}
-          </p>
-        </div>
-        {version.status !== "active" && (
-          <Button onClick={() => setShowDiff((v) => !v)} aria-expanded={showDiff}>
+    <Panel
+      title={
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid={`version-${version.version}`}>
+          Version <span className="t-figure -ml-1.5">{version.version}</span>
+          <Status tone={state.tone}>{state.text}</Status>
+        </span>
+      }
+      description={`${SOURCES[version.source] ?? version.source} · ${dateTime(version.created_at)}${version.status === "active" && version.activated_at ? ` · live since ${dateTime(version.activated_at)}` : ""}`}
+      actions={
+        version.status !== "active" ? (
+          <Button size="sm" onClick={() => setShowDiff((v) => !v)} aria-expanded={showDiff}>
             {showDiff ? "Hide changes" : "See what changes"}
           </Button>
+        ) : undefined
+      }
+    >
+      {(version.changes.length > 0 || version.note || (blocked && version.status !== "rejected") || showDiff || version.status === "draft" || rollback) && (
+      <div className="space-y-4">
+        {version.changes.length > 0 && (
+          <div>
+            <p className="t-eyebrow mb-2">Recommendations and the evidence behind them</p>
+            <ol className="divide-y divide-line border-y border-line">
+              {version.changes.map((c, i) => (
+                <li key={c.change} className="flex gap-3 py-2.5 text-[13px]">
+                  <span className="t-figure w-4 shrink-0 text-fg-3">{i + 1}</span>
+                  <span>
+                    <span className="font-medium text-fg">{c.change}</span>
+                    <span className="mt-0.5 block text-fg-2">Evidence: {c.evidence}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
         )}
-      </div>
+        {version.changes.length === 0 && version.note && <p className="whitespace-pre-line text-[13px] text-fg-2">{version.note}</p>}
 
-      {version.changes.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">Recommendations and the evidence behind them</p>
-          <ul className="mt-2 space-y-2">
-            {version.changes.map((c) => (
-              <li key={c.change} className="rounded-xl border border-ink-100 p-3 text-sm">
-                <p className="flex gap-2 font-medium text-ink-900">
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-amber-500" aria-hidden="true" />
-                  {c.change}
-                </p>
-                <p className="mt-1 pl-6 text-ink-600">Evidence: {c.evidence}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {version.changes.length === 0 && version.note && <p className="mt-3 whitespace-pre-line text-sm text-ink-600">{version.note}</p>}
+        {blocked && version.status !== "rejected" && (
+          <Banner tone="warn" title="Questions that must be answered before this version can go live">
+            <ul className="list-disc space-y-0.5 pl-4">
+              {version.blocking_questions.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ul>
+          </Banner>
+        )}
 
-      {blocked && version.status !== "rejected" && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          <p className="font-semibold">Questions that must be answered before this version can go live</p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-5">
-            {version.blocking_questions.map((q) => (
-              <li key={q}>{q}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {showDiff && <Diff campaign={campaign} version={version.version} />}
 
-      {showDiff && (
-        <div className="mt-4 border-t border-ink-100 pt-4">
-          <Diff campaign={campaign} version={version.version} />
-        </div>
-      )}
-
-      {(version.status === "draft" || rollback) && (
-        <div className="mt-5 border-t border-ink-100 pt-4">
-          {pending === null ? (
+        {(version.status === "draft" || rollback) &&
+          (pending === null ? (
             <div className="flex flex-wrap gap-2">
               <Button variant="primary" disabled={blocked} onClick={() => setPending("approve")}>
                 {rollback ? `Roll back to version ${version.version}` : "Approve and publish"}
@@ -165,55 +159,25 @@ function VersionCard({ campaign, version, onChanged }: { campaign: string; versi
               )}
             </div>
           ) : pending === "approve" ? (
-            <div role="group" aria-label="Confirm publishing">
-              <p className="text-sm text-ink-800">
-                {rollback
-                  ? `New calls will go back to version ${version.version}. The current live version is kept in the history.`
-                  : `New calls will use version ${version.version} from now on. You can roll back at any time.`}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="primary" busy={busy} onClick={() => decide("approve")}>
-                  {rollback ? "Yes, roll back" : `Yes, publish version ${version.version}`}
-                </Button>
-                <Button onClick={() => setPending(null)} disabled={busy}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
+            <Confirm label="Confirm publishing" confirmLabel={rollback ? "Yes, roll back" : `Yes, publish version ${version.version}`} busy={busy} error={error} onConfirm={() => decide("approve")} onCancel={cancel}>
+              {rollback
+                ? `New calls will go back to version ${version.version}. The current live version is kept in the history.`
+                : `New calls will use version ${version.version} from now on. You can roll back at any time.`}
+            </Confirm>
           ) : (
-            <div role="group" aria-label="Confirm rejecting">
-              <label className="block text-sm">
-                <span className="font-medium text-ink-800">Why are you rejecting it? (optional)</span>
-                <textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  maxLength={1000}
-                  rows={2}
-                  className="mt-1 w-full rounded-lg border border-ink-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"
-                />
-              </label>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="danger" busy={busy} onClick={() => decide("reject")}>
-                  Reject version {version.version}
-                </Button>
-                <Button onClick={() => setPending(null)} disabled={busy}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-          {error && (
-            <p className="mt-3 text-sm font-medium text-red-700" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
+            <Confirm label="Confirm rejecting" tone="danger" confirmLabel={`Reject version ${version.version}`} busy={busy} error={error} onConfirm={() => decide("reject")} onCancel={cancel}>
+              <Field label="Why are you rejecting it? (optional)">
+                <Textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} rows={2} />
+              </Field>
+            </Confirm>
+          ))}
+      </div>
       )}
-    </Card>
+    </Panel>
   );
 }
 
-function CoachCard({ campaign, onDone }: { campaign: string; onDone: () => void }) {
+function Coach({ campaign, onDone }: { campaign: string; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<CoachResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -234,38 +198,40 @@ function CoachCard({ campaign, onDone }: { campaign: string; onDone: () => void 
   }
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <CardTitle hint="The coach reads this campaign's reviewed calls and proposes a new draft. Nothing goes live until you approve it. Prices, terms, proof points and compliance lines are never changed.">
-          AI sales coach
-        </CardTitle>
-        <Button variant="primary" busy={busy} onClick={run}>
-          {!busy && <Sparkles className="size-4" aria-hidden="true" />}
+    <div className="rounded-panel bg-rail px-5 py-4 text-rail-fg">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0 max-w-2xl">
+          <h2 className="t-section text-white">AI sales coach</h2>
+          <p className="mt-1 text-[13px]">Reads this campaign&apos;s reviewed calls and proposes a new draft. Nothing goes live until you approve it. Prices, terms, proof points and compliance lines are never changed.</p>
+        </div>
+        <button type="button" onClick={run} disabled={busy} aria-busy={busy || undefined} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-control bg-signal px-3.5 text-[13.5px] font-semibold text-rail transition-opacity hover:opacity-90 disabled:opacity-60 max-sm:h-10">
+          <Sparkles className={`size-3.5 ${busy ? "animate-pulse" : ""}`} aria-hidden="true" />
           {busy ? "Reviewing calls" : "Ask the coach for improvements"}
-        </Button>
+        </button>
       </div>
-      {busy && (
-        <p className="text-sm text-ink-500" role="status">
-          This reads every reviewed call and can take a minute or two. You can stay on this page.
-        </p>
-      )}
+      {busy && <p className="mt-3 text-[12.5px]" role="status">This reads every reviewed call and can take a minute or two. You can stay on this page.</p>}
       {error && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert" data-testid="coach-error">
+        <p className="mt-3 rounded-control bg-white/10 px-3 py-2 text-[13px] text-white" role="alert" data-testid="coach-error">
           The coach did not produce a draft: {error}
         </p>
       )}
-      {result && result.version === null && (
-        <p className="rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700" role="status">
-          The coach read {result.reviewed_calls} reviewed calls and found no repeating pattern that justifies a change. The playbook stays as it is.
+      {result && (
+        <p className="mt-3 rounded-control bg-white/10 px-3 py-2 text-[13px] text-white" role="status">
+          {result.version === null
+            ? `The coach read ${result.reviewed_calls} reviewed calls and found no repeating pattern that justifies a change. The playbook stays as it is.`
+            : `Draft version ${result.version} was created from ${result.reviewed_calls} reviewed calls with ${result.changes.length} ${result.changes.length === 1 ? "recommendation" : "recommendations"}. Review it below; it is not live.`}
         </p>
       )}
-      {result && result.version !== null && (
-        <p className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900" role="status">
-          Draft version {result.version} was created from {result.reviewed_calls} reviewed calls with {result.changes.length}{" "}
-          {result.changes.length === 1 ? "recommendation" : "recommendations"}. Review it below; it is not live.
-        </p>
-      )}
-    </Card>
+    </div>
+  );
+}
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <h2 className="t-eyebrow">{title}</h2>
+      {children}
+    </div>
   );
 }
 
@@ -274,6 +240,7 @@ export default function PlaybookPage({ params }: { params: Promise<{ name: strin
   const { data, error, loading, reload } = useApi(backendUrl(["campaigns", name, "versions"]), versionListSchema);
   const [notice, setNotice] = useState<Notice>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
+  const changed = (n: Notice) => (setNotice(n), reload());
 
   const drafts = data?.filter((v) => v.status === "draft") ?? [];
   const live = data?.find((v) => v.status === "active");
@@ -282,61 +249,38 @@ export default function PlaybookPage({ params }: { params: Promise<{ name: strin
   return (
     <div className="space-y-6">
       <NoticeBar notice={notice} onClose={closeNotice} />
-      <CoachCard campaign={name} onDone={reload} />
+      <Coach campaign={name} onDone={reload} />
 
       {loading && !data ? (
-        <Loading what="Loading playbook versions" />
+        <Loading what="Loading playbook versions" strip={false} rows={4} />
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 ? (
         <EmptyState title="This campaign has no playbook yet">Create one on the calling engine first; its versions will appear here.</EmptyState>
       ) : data ? (
-        <>
-          <section className="space-y-3">
-            <h2 className="text-base font-semibold text-ink-900">Waiting for your decision</h2>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
+          <Group title="Waiting for your decision">
             {drafts.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-ink-200 bg-white px-5 py-4 text-sm text-ink-500">
-                No draft is waiting. Ask the coach above, or train the campaign from new documents, to get one.
-              </p>
+              <p className="rounded-panel border border-dashed border-line-strong px-4 py-3.5 text-[13px] text-fg-2">No draft is waiting. Ask the coach above, or train the campaign from new documents, to get one.</p>
             ) : (
-              drafts.map((v) => (
-                <VersionCard
-                  key={v.version}
-                  campaign={name}
-                  version={v}
-                  onChanged={(n) => {
-                    setNotice(n);
-                    reload();
-                  }}
-                />
-              ))
+              drafts.map((v) => <VersionPanel key={v.version} campaign={name} version={v} onChanged={changed} />)
             )}
-          </section>
-
-          {live && (
-            <section className="space-y-3">
-              <h2 className="text-base font-semibold text-ink-900">What calls use now</h2>
-              <VersionCard key={live.version} campaign={name} version={live} onChanged={setNotice} />
-            </section>
-          )}
-
-          {history.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-base font-semibold text-ink-900">History</h2>
-              {history.map((v) => (
-                <VersionCard
-                  key={v.version}
-                  campaign={name}
-                  version={v}
-                  onChanged={(n) => {
-                    setNotice(n);
-                    reload();
-                  }}
-                />
-              ))}
-            </section>
-          )}
-        </>
+          </Group>
+          <div className="space-y-6">
+            {live && (
+              <Group title="What calls use now">
+                <VersionPanel key={live.version} campaign={name} version={live} onChanged={setNotice} />
+              </Group>
+            )}
+            {history.length > 0 && (
+              <Group title="History">
+                {history.map((v) => (
+                  <VersionPanel key={v.version} campaign={name} version={v} onChanged={changed} />
+                ))}
+              </Group>
+            )}
+          </div>
+        </div>
       ) : null}
     </div>
   );

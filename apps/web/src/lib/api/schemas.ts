@@ -81,6 +81,8 @@ export const rulesSchema = z.object({
     stop_after_meetings: z.number().nullable(),
     max_opt_out_rate: z.number().nullable(),
   }),
+  /** What this campaign overrides, exactly as stored. Anything not listed follows the engine's defaults. */
+  stored: z.record(z.string(), z.unknown()).default({}),
   spend_usd: z.number(),
   stop_reason: z.string().nullable(),
 });
@@ -238,3 +240,67 @@ export const timelineSchema = z.object({
   days: z.array(z.object({ date: z.string(), calls: z.number(), answered: z.number(), conversions: z.number() })),
 });
 export type Timeline = z.infer<typeof timelineSchema>;
+
+export const callRowSchema = z.object({
+  call_run_id: z.number(),
+  lead: z.string(),
+  phone: z.string(),
+  status: z.string(),
+  mode: z.string(),
+  direction: z.string(),
+  language: z.string().nullable(),
+  answered_by: z.string().nullable(),
+  disposition: z.string().nullable(),
+  duration_seconds: z.number().nullable(),
+  cost_usd: z.number().nullable(),
+  playbook_version: z.number().nullable(),
+  summary: z.string().nullable().optional(),
+  started_at: z.string().nullable(),
+});
+export const callListSchema = z.array(callRowSchema);
+export type CallRow = z.infer<typeof callRowSchema>;
+
+const reviewSchema = z
+  .object({
+    summary: z.string().optional(),
+    next_action: z.string().optional(),
+    interest_level: z.number().optional(),
+    agent_quality_score: z.number().optional(),
+    customer_sentiment: z.string().optional(),
+    buying_intent_score: z.number().optional(),
+    lost_reason: z.string().optional(),
+    ai_disclosed: z.boolean().optional(),
+    objection_events: z.array(z.object({ category: z.string(), quote: z.string(), handled: z.boolean() })).optional(),
+    commitments_made_by_agent: z.array(z.string()).optional(),
+    missed_opportunities: z.array(z.string()).optional(),
+    incorrect_statements: z.array(z.string()).optional(),
+    coaching_notes: z.array(z.string()).optional(),
+    pain_points: z.array(z.string()).optional(),
+  })
+  .passthrough();
+
+export const callDetailSchema = z.object({
+  call_run_id: z.number(),
+  status: z.string(),
+  mode: z.string(),
+  direction: z.string(),
+  language: z.string().nullable(),
+  answered_by: z.string().nullable(),
+  disposition: z.string().nullable(),
+  duration_seconds: z.number().nullable(),
+  transcript: z.array(z.object({ role: z.string(), text: z.string(), at: z.string().optional() })).default([]),
+  tool_events: z.array(z.object({ at: z.string().optional(), tool: z.string(), arguments: z.record(z.string(), z.unknown()).default({}), result: z.record(z.string(), z.unknown()).default({}) })).default([]),
+  summary: z
+    .object({
+      review: reviewSchema.optional(),
+      agent_outcome: z.object({ summary: z.string().optional(), next_step: z.string().optional() }).passthrough().optional(),
+      latency: z.record(z.string(), z.unknown()).optional(),
+    })
+    .passthrough()
+    .default({}),
+  recording_url: z.string().nullable(),
+  error: z.string().nullable(),
+});
+export type CallDetail = z.infer<typeof callDetailSchema>;
+
+export const dialResultSchema = z.object({ call_run_id: z.number() });

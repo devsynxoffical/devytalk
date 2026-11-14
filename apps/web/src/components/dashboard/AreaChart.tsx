@@ -95,42 +95,42 @@ export function AreaChart({ points, measure, color }: { points: Point[]; measure
       >
         <defs>
           <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.16" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
         {geometry.ticks.map((tick) => (
           <g key={tick}>
-            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={geometry.y(tick)} y2={geometry.y(tick)} stroke={tick === 0 ? "#bac2d1" : "#eef1f6"} strokeWidth="1" />
-            <text x={MARGIN.left - 8} y={geometry.y(tick)} textAnchor="end" dominantBaseline="central" className="fill-ink-400 text-[11px] tabular-nums">
+            <line x1={MARGIN.left} x2={width - MARGIN.right} y1={geometry.y(tick)} y2={geometry.y(tick)} stroke={tick === 0 ? "#cbc8bf" : "#efede7"} strokeWidth="1" />
+            <text x={MARGIN.left - 8} y={geometry.y(tick)} textAnchor="end" dominantBaseline="central" className="t-figure fill-fg-3 text-[10.5px]">
               {count(tick)}
             </text>
           </g>
         ))}
         {points.map((p, i) =>
-          (i % labelEvery === 0 && points.length - 1 - i >= labelEvery / 2) || i === points.length - 1 ? (
-            <text key={p.date} x={geometry.x(i)} y={HEIGHT - 8} textAnchor={i === points.length - 1 ? "end" : i === 0 ? "start" : "middle"} className="fill-ink-400 text-[11px]">
+          (i % labelEvery === 0 && points.length - 1 - i >= labelEvery) || i === points.length - 1 ? (
+            <text key={p.date} x={geometry.x(i)} y={HEIGHT - 8} textAnchor={i === points.length - 1 ? "end" : i === 0 ? "start" : "middle"} className="fill-fg-3 text-[11px]">
               {parseDay(p.date).toLocaleDateString("en-US", { weekday: "short" })} {parseDay(p.date).getDate()}
             </text>
           ) : null,
         )}
-        {geometry.area && <path d={geometry.area} fill={`url(#${gradient})`} />}
-        <path d={geometry.line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {geometry.area && <path d={geometry.area} fill={`url(#${gradient})`} className="animate-fade" />}
+        <path key={measure} d={geometry.line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1" className="animate-draw" style={{ ["--draw-length" as string]: 1 }} />
         {active !== null && (
           <g pointerEvents="none">
-            <line x1={geometry.xy[active][0]} x2={geometry.xy[active][0]} y1={MARGIN.top} y2={geometry.baseline} stroke="#bac2d1" strokeWidth="1" strokeDasharray="3 3" />
+            <line x1={geometry.xy[active][0]} x2={geometry.xy[active][0]} y1={MARGIN.top} y2={geometry.baseline} stroke="#7d848d" strokeWidth="1" strokeDasharray="2 3" />
             <circle cx={geometry.xy[active][0]} cy={geometry.xy[active][1]} r="5" fill={color} stroke="#ffffff" strokeWidth="2" />
           </g>
         )}
       </svg>
       {hovered && active !== null && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-white px-3 py-1.5 text-center shadow-lg ring-1 ring-ink-100"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-control bg-fg px-2.5 py-1.5 text-center shadow-overlay"
           style={{ left: Math.max(60, Math.min(width - 60, geometry.xy[active][0])), top: Math.max(44, geometry.xy[active][1] - 10) }}
         >
-          <p className="whitespace-nowrap text-[11px] text-ink-500">{parseDay(hovered.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
-          <p className="whitespace-nowrap text-sm font-semibold text-ink-900">
-            {count(hovered.value)} <span className="font-normal text-ink-500">{measure.toLowerCase()}</span>
+          <p className="whitespace-nowrap text-[11px] text-white/65">{parseDay(hovered.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
+          <p className="whitespace-nowrap text-[13px] font-medium text-white">
+            <span className="t-figure">{count(hovered.value)}</span> <span className="font-normal text-white/65">{measure.toLowerCase()}</span>
           </p>
         </div>
       )}

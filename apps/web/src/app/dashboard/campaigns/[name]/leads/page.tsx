@@ -1,206 +1,181 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { Check, ChevronRight, HelpCircle, X } from "lucide-react";
+import { use, useCallback, useEffect, useState } from "react";
+import { Check, Minus, Search, X } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { DASH, FACTOR_LABELS, count, dateTime, duration, label, languageName } from "@/lib/api/format";
-import { leadDetailSchema, leadListSchema, type Lead } from "@/lib/api/schemas";
-import { Button, Card, EmptyState, ErrorState, Loading, Pill, TableWrap, Td, Th, type Tone } from "@/components/dashboard/ui";
+import { leadDetailSchema, leadListSchema, type Lead, type LeadDetail } from "@/lib/api/schemas";
+import { Banner, Button, DataTable, Drawer, EmptyState, ErrorState, Field, Input, KeyValues, Loading, Segmented, Select, Skeleton, Status, Tag, type Column, type Tone } from "@/components/dashboard/ui";
 import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 25;
-const CATEGORY_TONE: Record<Lead["category"], Tone> = { hot: "red", warm: "amber", cold: "blue", unscored: "gray" };
-const INTENT_TONE: Record<string, Tone> = { high: "green", medium: "amber", low: "gray" };
+const CATEGORY_TONE: Record<Lead["category"], Tone> = { hot: "crit", warm: "warn", cold: "info", unscored: "neutral" };
+const INTENT_TONE: Record<string, Tone> = { high: "pos", medium: "warn", low: "neutral" };
 const STATUSES = ["pending", "calling", "callback", "completed", "failed", "dnc"];
-const selectClass = "h-9 rounded-lg border border-ink-200 bg-white px-2.5 text-sm text-ink-900 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100";
+const statusText = (status: string) => (status === "dnc" ? "Do not call" : label(status));
 
-function ScoreBadge({ lead }: { lead: Pick<Lead, "score" | "category"> }) {
+function Score({ lead, large = false }: { lead: Pick<Lead, "score" | "category">; large?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="w-8 text-right text-base font-semibold tabular-nums text-ink-900">{lead.score ?? DASH}</span>
-      <Pill tone={CATEGORY_TONE[lead.category]}>{label(lead.category)}</Pill>
+      <span className={cn("t-figure text-right font-medium text-fg", large ? "text-[26px] leading-none" : "w-7 text-[14px]")}>{lead.score ?? DASH}</span>
+      <Tag tone={CATEGORY_TONE[lead.category]}>{label(lead.category)}</Tag>
     </span>
   );
 }
 
-function EvidenceIcon({ value }: { value: string | undefined }) {
-  if (value === "yes" || value === "now" || value === "this_quarter") return <Check className="size-4 text-brand-600" aria-hidden="true" />;
-  if (value === "no" || value === "none") return <X className="size-4 text-red-500" aria-hidden="true" />;
-  return <HelpCircle className="size-4 text-ink-300" aria-hidden="true" />;
+function Evidence({ value }: { value: string | undefined }) {
+  if (value === "yes" || value === "now" || value === "this_quarter") return <Check className="size-3.5 text-pos" aria-hidden="true" />;
+  if (value === "no" || value === "none") return <X className="size-3.5 text-crit" aria-hidden="true" />;
+  return <Minus className="size-3.5 text-fg-3" aria-hidden="true" />;
 }
 
-function LeadPanel({ campaign, leadId, onClose }: { campaign: string; leadId: number; onClose: () => void }) {
-  const { data, error, loading, reload } = useApi(backendUrl(["campaigns", campaign, "leads", leadId]), leadDetailSchema);
+function Heading({ children }: { children: React.ReactNode }) {
+  return <h3 className="t-eyebrow mb-2">{children}</h3>;
+}
+
+function Profile({ data }: { data: LeadDetail }) {
   const [openCall, setOpenCall] = useState<number | null>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink-900/30" onClick={onClose}>
-      <aside
-        role="dialog"
-        aria-modal="true"
-        aria-label="Lead details"
-        className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-ink-900">{data?.name || data?.phone || "Lead"}</h2>
-            {data && <p className="text-sm text-ink-500">{[data.company, data.phone, data.email].filter(Boolean).join(" · ")}</p>}
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-50">
-            <X className="size-5" />
-          </button>
+    <div className="space-y-6">
+      <section>
+        <div className="flex items-center justify-between">
+          <Heading>Qualification score</Heading>
+          <Score lead={data} large />
         </div>
+        {data.score === null ? (
+          <p className="text-[13px] text-fg-2">No score yet: no call has given evidence about this lead.</p>
+        ) : (
+          <ul className="divide-y divide-line border-y border-line">
+            {Object.entries(FACTOR_LABELS).map(([factor, text]) => {
+              const value = data.evidence[factor as keyof typeof data.evidence] as string | undefined;
+              return (
+                <li key={factor} className="flex items-center gap-2.5 py-2 text-[13px]">
+                  <Evidence value={value} />
+                  <span className="flex-1 text-fg">{text}</span>
+                  <span className="text-fg-3">{label(value ?? "unknown")}</span>
+                  <span className="t-figure w-10 text-right font-medium text-fg">+{data.points[factor] ?? 0}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {(data.evidence.quotes?.length ?? 0) > 0 && (
+          <ul className="mt-3 space-y-1.5">
+            {data.evidence.quotes!.map((q) => (
+              <li key={q} dir="auto" className="border-l-2 border-accent/40 pl-3 text-[13px] text-fg-2">
+                “{q}”
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-        {loading && !data ? (
-          <Loading what="Loading lead" />
-        ) : error ? (
-          <div className="mt-6">
-            <ErrorState message={error.message} onRetry={reload} />
-          </div>
-        ) : data ? (
-          <div className="mt-6 space-y-6">
-            <section>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-ink-900">Qualification score</h3>
-                <ScoreBadge lead={data} />
-              </div>
-              {data.score === null ? (
-                <p className="mt-2 text-sm text-ink-500">No score yet: no call has given evidence about this lead.</p>
-              ) : (
-                <ul className="mt-3 divide-y divide-ink-100 rounded-xl border border-ink-100">
-                  {Object.entries(FACTOR_LABELS).map(([factor, text]) => {
-                    const value = data.evidence[factor as keyof typeof data.evidence] as string | undefined;
-                    return (
-                      <li key={factor} className="flex items-center gap-3 px-3 py-2.5 text-sm">
-                        <EvidenceIcon value={value} />
-                        <span className="flex-1 text-ink-800">{text}</span>
-                        <span className="text-ink-500">{label(value ?? "unknown")}</span>
-                        <span className="w-12 text-right font-semibold tabular-nums text-ink-900">+{data.points[factor] ?? 0}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {(data.evidence.quotes?.length ?? 0) > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">What they said</p>
-                  <ul className="mt-1.5 space-y-1.5">
-                    {data.evidence.quotes!.map((q) => (
-                      <li key={q} className="border-l-2 border-brand-300 pl-3 text-sm text-ink-700">“{q}”</li>
-                    ))}
-                  </ul>
+      {data.next_action && (
+        <Banner tone="pos" title="Recommended next action">
+          {data.next_action}
+        </Banner>
+      )}
+
+      <KeyValues
+        rows={[
+          ["Buying intent", data.buying_intent ? `${label(data.buying_intent)} (${data.buying_intent_score})` : "Not assessed"],
+          ["Status", `${statusText(data.status)}${data.last_disposition ? ` · ${label(data.last_disposition)}` : ""}`],
+          ["Attempts", <span key="a" className="t-figure">{data.attempts}</span>],
+          ...(data.lost_reason ? [["Lost because", label(data.lost_reason)] as [string, string]] : []),
+        ]}
+      />
+
+      {data.objections.length > 0 && (
+        <section>
+          <Heading>Objections</Heading>
+          <ul className="divide-y divide-line border-y border-line">
+            {data.objections.map((o) => (
+              <li key={o.category} className="py-2.5 text-[13px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-fg">{label(o.category)}</span>
+                  <Status tone={o.handled === o.raised ? "pos" : o.handled > 0 ? "warn" : "crit"}>
+                    {o.handled} of {o.raised} handled
+                  </Status>
                 </div>
-              )}
-            </section>
+                {o.quotes[0] && <p dir="auto" className="mt-1 text-fg-2">“{o.quotes[0]}”</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-            <section className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-xl bg-ink-50 p-3">
-                <p className="text-ink-500">Buying intent</p>
-                <p className="mt-0.5 font-semibold text-ink-900">
-                  {data.buying_intent ? `${label(data.buying_intent)} (${data.buying_intent_score})` : "Not assessed"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-ink-50 p-3">
-                <p className="text-ink-500">Status</p>
-                <p className="mt-0.5 font-semibold text-ink-900">
-                  {label(data.status)}
-                  {data.last_disposition ? ` · ${label(data.last_disposition)}` : ""}
-                </p>
-              </div>
-            </section>
+      {data.pain_points.length > 0 && (
+        <section>
+          <Heading>Problems they mentioned</Heading>
+          <ul className="list-disc space-y-1 pl-4 text-[13px] text-fg-2">
+            {data.pain_points.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-            {data.next_action && (
-              <section className="rounded-xl border border-brand-200 bg-brand-50 p-4">
-                <h3 className="text-sm font-semibold text-brand-900">Recommended next action</h3>
-                <p className="mt-1 text-sm text-brand-900">{data.next_action}</p>
-              </section>
-            )}
-
-            {(data.objections.length > 0 || data.lost_reason) && (
-              <section>
-                <h3 className="font-semibold text-ink-900">Objections</h3>
-                {data.lost_reason && <p className="mt-1 text-sm text-ink-600">Lost because: {label(data.lost_reason)}</p>}
-                <ul className="mt-2 space-y-2">
-                  {data.objections.map((o) => (
-                    <li key={o.category} className="rounded-xl border border-ink-100 p-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-ink-900">{label(o.category)}</span>
-                        <Pill tone={o.handled === o.raised ? "green" : o.handled > 0 ? "amber" : "red"}>
-                          {o.handled} of {o.raised} handled
-                        </Pill>
-                      </div>
-                      {o.quotes[0] && <p className="mt-1 text-ink-600">“{o.quotes[0]}”</p>}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {data.pain_points.length > 0 && (
-              <section>
-                <h3 className="font-semibold text-ink-900">Problems they mentioned</h3>
-                <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-ink-700">
-                  {data.pain_points.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            <section>
-              <h3 className="font-semibold text-ink-900">Calls ({data.call_history.length})</h3>
-              {data.call_history.length === 0 ? (
-                <p className="mt-1 text-sm text-ink-500">This lead has not been called yet.</p>
-              ) : (
-                <ul className="mt-2 space-y-2">
-                  {data.call_history.map((call) => (
-                    <li key={call.call_run_id} className="rounded-xl border border-ink-100 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-500">
-                        <span className="font-semibold text-ink-900">{dateTime(call.started_at)}</span>
-                        <span>{label(call.direction)}</span>
-                        <span>{duration(call.duration_seconds)}</span>
-                        {call.language && <span>{languageName(call.language)}</span>}
-                        {call.disposition && <Pill>{label(call.disposition)}</Pill>}
-                      </div>
-                      {call.summary && <p className="mt-2 text-ink-700">{call.summary}</p>}
-                      {call.transcript.length > 0 && (
-                        <>
-                          <button
-                            type="button"
-                            className="mt-2 text-sm font-semibold text-brand-700 hover:underline"
-                            aria-expanded={openCall === call.call_run_id}
-                            onClick={() => setOpenCall(openCall === call.call_run_id ? null : call.call_run_id)}
-                          >
-                            {openCall === call.call_run_id ? "Hide transcript" : "Show transcript"}
-                          </button>
-                          {openCall === call.call_run_id && (
-                            <ol className="mt-2 space-y-1.5 rounded-lg bg-ink-50 p-3">
-                              {call.transcript.map((line, i) => (
-                                <li key={i} className="text-ink-700">
-                                  <span className="font-semibold text-ink-900">{line.role === "user" ? "Prospect" : "Agent"}: </span>
-                                  {line.text}
-                                </li>
-                              ))}
-                            </ol>
-                          )}
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </div>
-        ) : null}
-      </aside>
+      <section>
+        <h3 className="t-eyebrow mb-2">Calls ({data.call_history.length})</h3>
+        {data.call_history.length === 0 ? (
+          <p className="text-[13px] text-fg-2">This lead has not been called yet.</p>
+        ) : (
+          <ol className="relative space-y-4 border-l border-line pl-4">
+            {data.call_history.map((call) => (
+              <li key={call.call_run_id} className="relative text-[13px]">
+                <span className="absolute -left-[19px] top-1.5 size-1.5 rounded-[1px] bg-fg-3" aria-hidden="true" />
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-fg-3">
+                  <span className="font-medium text-fg">{dateTime(call.started_at)}</span>
+                  <span>{label(call.direction)}</span>
+                  <span className="t-figure">{duration(call.duration_seconds)}</span>
+                  {call.language && <span>{languageName(call.language)}</span>}
+                  {call.disposition && <Tag>{label(call.disposition)}</Tag>}
+                </div>
+                {call.summary && <p className="mt-1.5 text-fg-2">{call.summary}</p>}
+                {call.transcript.length > 0 && (
+                  <>
+                    <button type="button" className="mt-1.5 text-[12.5px] font-medium text-accent hover:underline" aria-expanded={openCall === call.call_run_id} onClick={() => setOpenCall(openCall === call.call_run_id ? null : call.call_run_id)}>
+                      {openCall === call.call_run_id ? "Hide transcript" : "Show transcript"}
+                    </button>
+                    {openCall === call.call_run_id && (
+                      <ol className="mt-2 animate-rise space-y-2 rounded-control bg-paper p-3">
+                        {call.transcript.map((line, i) => (
+                          <li key={i} dir="auto">
+                            <span className="t-eyebrow mr-2">{line.role === "user" ? "Prospect" : "Agent"}</span>
+                            <span className="text-fg">{line.text}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
+  );
+}
+
+function LeadDrawer({ campaign, leadId, onClose }: { campaign: string; leadId: number; onClose: () => void }) {
+  const { data, error, loading, reload } = useApi(backendUrl(["campaigns", campaign, "leads", leadId]), leadDetailSchema);
+  return (
+    <Drawer label="Lead details" title={data?.name || data?.phone || "Lead"} subtitle={data ? [data.company, data.phone, data.email].filter(Boolean).join(" · ") : undefined} onClose={onClose}>
+      {loading && !data ? (
+        <div className="space-y-3" role="status">
+          <span className="sr-only">Loading lead…</span>
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="w-full" />
+          <Skeleton className="w-5/6" />
+          <Skeleton className="w-2/3" />
+        </div>
+      ) : error ? (
+        <ErrorState message={error.message} onRetry={reload} />
+      ) : data ? (
+        <Profile data={data} />
+      ) : null}
+    </Drawer>
   );
 }
 
@@ -214,6 +189,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
+  const close = useCallback(() => setSelected(null), []);
 
   // Search as the person types, without a request per keystroke.
   useEffect(() => {
@@ -222,141 +198,141 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
   }, [search]);
   useEffect(() => setPage(0), [category, status, intent, minScore, query]);
 
-  const url = backendUrl(["campaigns", name, "leads"], {
-    category,
-    status,
-    intent,
-    min_score: minScore,
-    q: query,
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
-  });
-  const { data, error, loading, reload } = useApi(url, leadListSchema);
+  const { data, error, loading, reload } = useApi(backendUrl(["campaigns", name, "leads"], { category, status, intent, min_score: minScore, q: query, limit: PAGE_SIZE, offset: page * PAGE_SIZE }), leadListSchema);
   const filtered = Boolean(category || status || intent || minScore || query);
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+  const clear = () => (setCategory(""), setStatus(""), setIntent(""), setMinScore(""), setSearch(""));
+
+  const columns: Column<Lead>[] = [
+    {
+      key: "lead",
+      label: "Lead",
+      primary: true,
+      render: (lead) => (
+        <span className="block">
+          <button type="button" className="text-left font-medium text-fg hover:underline" onClick={(e) => (e.stopPropagation(), setSelected(lead.id))}>
+            {lead.name || lead.phone}
+          </button>
+          <span className="t-meta block">{lead.company || <span className="t-figure">{lead.phone}</span>}</span>
+        </span>
+      ),
+    },
+    { key: "score", label: "Score", render: (lead) => <Score lead={lead} /> },
+    { key: "intent", label: "Buying intent", render: (lead) => (lead.buying_intent ? <Status tone={INTENT_TONE[lead.buying_intent]}>{label(lead.buying_intent)}</Status> : <span className="text-fg-3">{DASH}</span>) },
+    {
+      key: "status",
+      label: "Status",
+      render: (lead) => (
+        <span className="block">
+          {statusText(lead.status)}
+          {lead.lost_reason && <span className="t-meta block">Lost: {label(lead.lost_reason)}</span>}
+        </span>
+      ),
+    },
+    { key: "calls", label: "Calls", numeric: true, render: (lead) => count(lead.calls) },
+    { key: "next", label: "Next action", render: (lead) => lead.next_action ?? null, className: "sm:max-w-80" },
+  ];
 
   return (
     <div className="space-y-4">
-      <Card className="!p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div role="group" aria-label="Lead quality" className="inline-flex rounded-lg border border-ink-200 p-0.5">
-            {[["", "All"], ["hot", "Hot"], ["warm", "Warm"], ["cold", "Cold"], ["unscored", "Unscored"]].map(([value, text]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={category === value}
-                onClick={() => setCategory(value)}
-                className={cn("rounded-md px-3 py-1.5 text-sm font-semibold", category === value ? "bg-ink-900 text-white" : "text-ink-600 hover:bg-ink-50")}
-              >
-                {text}
-              </button>
-            ))}
-          </div>
-          <label className="text-sm">
-            <span className="mb-1 block text-xs font-medium text-ink-500">Status</span>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+        <Segmented label="Lead quality" value={category} onChange={setCategory} options={[["", "All"], ["hot", "Hot"], ["warm", "Warm"], ["cold", "Cold"], ["unscored", "Unscored"]]} />
+        <div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:grid-cols-3">
+          <Field label="Status">
+            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Any</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s === "dnc" ? "Do not call" : label(s)}
+                  {statusText(s)}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block text-xs font-medium text-ink-500">Buying intent</span>
-            <select value={intent} onChange={(e) => setIntent(e.target.value)} className={selectClass}>
+            </Select>
+          </Field>
+          <Field label="Buying intent">
+            <Select value={intent} onChange={(e) => setIntent(e.target.value)}>
               <option value="">Any</option>
               <option value="high">High</option>
               <option value="medium">Medium</option>
               <option value="low">Low</option>
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block text-xs font-medium text-ink-500">Minimum score</span>
-            <select value={minScore} onChange={(e) => setMinScore(e.target.value)} className={selectClass}>
+            </Select>
+          </Field>
+          <Field label="Minimum score" className="max-sm:col-span-2">
+            <Select value={minScore} onChange={(e) => setMinScore(e.target.value)}>
               <option value="">Any</option>
               {[20, 40, 60, 70, 80].map((n) => (
                 <option key={n} value={n}>
                   {n}+
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="min-w-48 flex-1 text-sm">
-            <span className="mb-1 block text-xs font-medium text-ink-500">Search leads</span>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name, company or phone"
-              className={cn(selectClass, "w-full")}
-            />
-          </label>
+            </Select>
+          </Field>
         </div>
-      </Card>
+        <Field label="Search leads" className="w-full min-w-48 flex-1 sm:w-auto">
+          <span className="relative block">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-fg-3" aria-hidden="true" />
+            <Input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, company or phone" className="pl-8" />
+          </span>
+        </Field>
+      </div>
 
       {loading && !data ? (
-        <Loading what="Loading leads" />
+        <Loading what="Loading leads" strip={false} rows={8} />
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.total === 0 ? (
         filtered ? (
-          <EmptyState title="No leads match these filters">Change or clear the filters to see more leads.</EmptyState>
+          <EmptyState title="No leads match these filters" action={<Button onClick={clear}>Clear filters</Button>}>
+            Change or clear the filters to see more leads.
+          </EmptyState>
         ) : (
           <EmptyState title="No leads in this campaign yet">
-            Import a lead sheet on the calling engine with <code>callagent leads import</code>.
+            Import a lead sheet on the calling engine with <code className="t-figure rounded-chip bg-sunken px-1">callagent leads import</code>.
           </EmptyState>
         )
       ) : data ? (
         <>
-          <p className="text-sm text-ink-500" aria-live="polite">
-            {count(data.total)} {data.total === 1 ? "lead" : "leads"}
-            {filtered ? " match" : ""}
-          </p>
-          <TableWrap>
-            <thead className="bg-ink-50">
-              <tr>
-                <Th>Lead</Th>
-                <Th>Score</Th>
-                <Th>Buying intent</Th>
-                <Th>Status</Th>
-                <Th>Recommended next action</Th>
-                <Th />
-              </tr>
-            </thead>
-            <tbody className={cn(loading && "opacity-60")}>
-              {data.leads.map((lead) => (
-                <tr key={lead.id} className="cursor-pointer border-t border-ink-100 hover:bg-brand-50/40" onClick={() => setSelected(lead.id)}>
-                  <Td>
-                    <button type="button" className="text-left font-semibold text-ink-900 hover:underline" onClick={() => setSelected(lead.id)}>
-                      {lead.name || lead.phone}
-                    </button>
-                    <span className="block text-ink-500">{lead.company || lead.phone}</span>
-                  </Td>
-                  <Td>
-                    <ScoreBadge lead={lead} />
-                  </Td>
-                  <Td>{lead.buying_intent ? <Pill tone={INTENT_TONE[lead.buying_intent]}>{label(lead.buying_intent)}</Pill> : <span className="text-ink-400">{DASH}</span>}</Td>
-                  <Td>
-                    {lead.status === "dnc" ? "Do not call" : label(lead.status)}
-                    {lead.lost_reason && <span className="block text-xs text-ink-500">Lost: {label(lead.lost_reason)}</span>}
-                  </Td>
-                  <Td className="max-w-xs">{lead.next_action ?? <span className="text-ink-400">{DASH}</span>}</Td>
-                  <Td>
-                    <ChevronRight className="size-4 text-ink-300" aria-hidden="true" />
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </TableWrap>
+          <div className="flex items-center justify-between gap-3">
+            <p className="t-meta" aria-live="polite" data-testid="lead-count">
+              {count(data.total)} {data.total === 1 ? "lead" : "leads"}
+              {filtered ? " match" : ""}
+            </p>
+            {filtered && (
+              <Button variant="ghost" size="sm" onClick={clear}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+          <div className={cn("rounded-panel border border-line bg-surface transition-opacity", loading && "opacity-60")}>
+            <DataTable columns={columns} rows={data.leads} rowKey={(lead) => lead.id} caption="Leads" onRowClick={(lead) => setSelected(lead.id)}
+              mobileRow={(lead) => (
+                <span className="block">
+                  <span className="flex items-center justify-between gap-4">
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] font-medium text-fg">{lead.name || lead.phone}</span>
+                      <span className="t-meta block truncate">{lead.company || lead.phone}</span>
+                    </span>
+                    <Score lead={lead} />
+                  </span>
+                  <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12.5px] text-fg-2">
+                    <span>{statusText(lead.status)}</span>
+                    {lead.buying_intent && <Status tone={INTENT_TONE[lead.buying_intent]}>{label(lead.buying_intent)} intent</Status>}
+                    {lead.lost_reason && <span className="text-fg-3">Lost: {label(lead.lost_reason)}</span>}
+                  </span>
+                  {lead.next_action && <span className="mt-1 line-clamp-2 text-[12.5px] text-fg-3">{lead.next_action}</span>}
+                </span>
+              )}
+            />
+          </div>
           {pages > 1 && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <Button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
                 Previous
               </Button>
-              <span className="text-sm text-ink-500">
-                Page {page + 1} of {pages}
+              <span className="t-meta">
+                <span className="t-figure text-fg-2">
+                  {page * PAGE_SIZE + 1}–{Math.min(data.total, (page + 1) * PAGE_SIZE)}
+                </span>{" "}
+                of {count(data.total)} · page {page + 1} of {pages}
               </span>
               <Button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1}>
                 Next
@@ -366,7 +342,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
         </>
       ) : null}
 
-      {selected !== null && <LeadPanel campaign={name} leadId={selected} onClose={() => setSelected(null)} />}
+      {selected !== null && <LeadDrawer campaign={name} leadId={selected} onClose={close} />}
     </div>
   );
 }

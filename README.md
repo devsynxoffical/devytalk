@@ -53,20 +53,21 @@ It adds no data of its own: every number is read from the engine's API.
 
 | Screen | What it shows |
 | --- | --- |
-| Overview | Totals across campaigns (calls answered, conversions, budget used) as tiles with progress rings, a calls-per-day chart for the last 14 days, how calls ended, campaigns ranked by conversion rate, the hottest leads, and a "needs your attention" list: automatic pauses, playbook drafts waiting for a decision, A/B tests with a result, unsupported statements, failed background work |
-| Campaigns | Every campaign with status, budget use and the reason for an automatic pause. The search box in the top bar filters this list |
-| Performance | Calls, answered, conversions, conversion rate, cost per conversion, budget spent and remaining, objections ranked with handled rate, lost reasons, competitors, results by playbook version and by language |
-| Leads | Score and hot/warm/cold category, buying intent, status, recommended next action; filters for all of these; a detail panel with the evidence behind each score factor, quotes, objections, lost reason and call transcripts |
+| Overview | Totals across campaigns, a calls-per-day chart, what needs a decision, campaigns compared in a sortable table, call outcomes, hottest leads |
+| Campaigns | Every campaign in a sortable grid with state, leads, meetings and budget use; filter by name or state |
+| Campaign header | State, **Start dialing** / **Pause dialing** (confirmed, and the engine's answer shown), and the sections below |
+| Performance | Calls, answered, conversions, conversion rate, cost per conversion, objections with handled rate, budget and limits, lost reasons, competitors, results by playbook version and language |
+| Leads | Filters for quality, status, buying intent, score and search; a dense grid; a profile drawer with the evidence behind each score factor, quotes, objections, next action and call history |
+| Calls | The call log, updating while calls are in progress; for each call the summary, follow-up, assessment, objections, what the agent did and the transcript; a form to call one number |
 | Coach & playbook | Run the AI coach, read each recommendation with its evidence, compare a version with the live one, approve, reject or roll back |
-| A/B tests | Start a controlled test of a version against the live one, watch sample sizes per side, stop it, or make the tested version live once the evidence supports it |
-| Background work | Reviews, booking notifications and training runs the engine does off the call: how many are waiting, running or gave up, with the reason, and a button to run a failed one again |
+| A/B tests | Start a controlled test, compare the two versions side by side with sample sizes, stop it, or make the tested version live once the evidence supports it |
+| Settings | Calling days and hours, attempts, daily and monthly limits, budget and stop conditions; export of results as CSV |
+| Background work | Reviews, booking notifications and training runs: waiting, running, gave up, with the reason and a way to run one again |
 
-Layout: a grouped sidebar, a top bar with campaign search, and white cards on a soft
-grey canvas. Chart colours live in `src/components/dashboard/viz.tsx`: three series
-hues that stay distinguishable for colour-blind readers, and status colours that are
-always paired with an icon and a label. The activity chart is drawn from the engine's
-`/api/timeline`; there are no "vs yesterday" figures or targets, and nothing on the
-page is estimated or filled in.
+Design: `docs/UI_REDESIGN.md` describes the visual language ("Ledger"), the tokens,
+the type system (IBM Plex Sans and Mono), the component library and the layout chosen
+for each screen. Jump anywhere with Ctrl/⌘K. Phones get a tab bar, compact rows and
+bottom sheets instead of a squeezed desktop.
 
 Rules the dashboard keeps:
 

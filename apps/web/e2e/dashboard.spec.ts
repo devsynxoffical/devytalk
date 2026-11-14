@@ -1,7 +1,8 @@
 /**
- * The acceptance path, in a real browser against a real calling engine:
- * open a campaign, understand its sales performance, inspect lead intelligence, review
- * AI recommendations, and approve or reject a playbook, without a command line.
+ * The product, end to end, in a real browser against a real calling engine:
+ * sign in, read the overview, open a campaign, understand its performance, work its
+ * leads and calls, change its rules, review AI recommendations, approve or reject a
+ * playbook and run an A/B test, without a command line.
  *
  * The numbers asserted here come from the engine's test fixtures
  * (aicallingagent/tests/seed_dashboard.py) and are counted by the engine itself.
@@ -26,22 +27,22 @@ test.afterAll(async () => {
 });
 
 /** An error message on the page (Next.js keeps an empty role="alert" element of its own). */
-function alertWith(text: string) {
-  return page.getByRole("alert").filter({ hasText: text });
-}
+const alertWith = (text: string) => page.getByRole("alert").filter({ hasText: text });
+const toast = (text: string) => page.getByRole("status").filter({ hasText: text });
+const sections = () => page.getByRole("navigation", { name: "Campaign sections" });
+const panel = (heading: string) => page.locator("section", { has: page.getByRole("heading", { name: heading }) });
 
-async function openCampaign(page: Page, name: string, tab?: string) {
+async function openCampaign(name: string, tab?: string) {
   await page.goto("/dashboard/campaigns");
-  await page.getByRole("link", { name: new RegExp(name.replace(/[()]/g, "\\$&")) }).click();
+  await page.getByTestId("campaign-grid").getByRole("link", { name }).click();
   await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
-  if (tab) await page.getByRole("navigation", { name: "Campaign sections" }).getByRole("link", { name: tab }).click();
+  if (tab) await sections().getByRole("link", { name: tab }).click();
 }
 
-test("the dashboard is closed to visitors who are not signed in", async () => {
+test("the console is closed to visitors who are not signed in", async () => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
-  const direct = await page.request.get("/api/backend/campaigns");
-  expect(direct.status()).toBe(401);
+  expect((await page.request.get("/api/backend/campaigns")).status()).toBe(401);
 
   await page.getByLabel("Access token").fill("not-the-right-token");
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -53,11 +54,12 @@ test("signing in keeps the token away from page scripts and lists the campaigns"
   await page.goto("/login");
   await page.getByLabel("Access token").fill(TOKEN);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Welcome back", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+
   await page.goto("/dashboard/campaigns");
-  await expect(page.getByRole("heading", { name: "Campaigns", level: 1 })).toBeVisible();
-  for (const name of [ACCOUNTING, DENTAL, EMPTY]) await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
-  await expect(page.getByText("Paused automatically: the budget of $32.00 was reached (spent $32.05)")).toBeVisible();
+  const grid = page.getByTestId("campaign-grid");
+  for (const name of [ACCOUNTING, DENTAL, EMPTY]) await expect(grid.getByRole("link", { name })).toBeVisible();
+  await expect(grid).toContainText("the budget of $32.00 was reached (spent $32.05)");
 
   const session = (await page.context().cookies()).find((c) => c.name === "dt_session");
   expect(session?.httpOnly).toBe(true);
@@ -74,56 +76,73 @@ test("the overview adds up real results across campaigns and lists what needs a 
   await expect(page.getByTestId("tile-calls").getByRole("img", { name: "Share of calls answered: 97%" })).toBeVisible();
   await expect(page.getByTestId("tile-conversions")).toContainText("36");
   await expect(page.getByTestId("tile-conversions").getByRole("img", { name: "Conversion rate: 23%" })).toBeVisible();
-  // The sidebar's bell says something is waiting (one campaign paused itself).
-  await expect(page.getByRole("link", { name: "1 item needs your attention" })).toBeVisible();
+  await expect(page.getByTestId("tile-hot")).toContainText("16");
+  // Only one campaign has a budget; the other's spend is named, not folded into the ring.
+  await expect(page.getByTestId("tile-spend")).toContainText("$32.05");
+  await expect(page.getByTestId("tile-spend")).toContainText("of $32.00 budgeted");
+  await expect(page.getByTestId("tile-spend")).toContainText("$45.00 unbudgeted");
 
   // Calls per day come from the engine: 14 days, and their total is the number of calls in the window.
   const timeline = page.getByTestId("timeline");
   await expect(timeline.getByRole("img", { name: "Calls placed per day" })).toBeVisible();
   await expect(timeline.locator("table tbody tr")).toHaveCount(14);
   await expect(page.getByText("Last 14 days · 159 calls placed")).toBeVisible();
-  await page.getByLabel("Show").selectOption("conversions");
+  await page.getByRole("group", { name: "Show" }).getByRole("button", { name: "Conversions" }).click();
   await expect(page.getByText("Last 14 days · 36 conversions")).toBeVisible();
-  // Only one campaign has a budget; the other's spend is named, not folded into the ring.
-  await expect(page.getByTestId("tile-spend")).toContainText("$32.05");
-  await expect(page.getByTestId("tile-spend")).toContainText("of $32.00 budgeted");
-  await expect(page.getByTestId("tile-spend")).toContainText("$45.00 unbudgeted");
 
-  const ranking = page.getByTestId("campaign-ranking").getByRole("listitem");
+  // Campaigns compared, best conversion rate first; no rate is invented for a campaign with no calls.
+  const ranking = page.getByTestId("campaign-ranking").locator("tbody tr");
   await expect(ranking.nth(0)).toContainText(ACCOUNTING);
   await expect(ranking.nth(0)).toContainText("25.0%");
-  await expect(ranking.nth(0).getByRole("img", { name: "Accounting firms Q4 conversion rate: 25%" })).toBeVisible();
   await expect(ranking.nth(1)).toContainText("22.2%");
-  await expect(ranking.nth(2)).toContainText("No answered calls"); // no rate is invented for a campaign with no calls
+  await expect(ranking.nth(2)).toContainText("No answered calls");
+  await page.getByTestId("campaign-ranking").getByRole("button", { name: "Calls" }).click(); // sortable: most calls first
+  await expect(ranking.nth(0)).toContainText(DENTAL);
 
   await expect(page.getByTestId("outcomes")).toContainText("Not interested");
   await expect(page.getByTestId("hot-leads").getByRole("listitem").first()).toContainText("Maria Okafor");
   await expect(page.getByText("16 of 42 scored leads are hot")).toBeVisible();
 
+  // The bell lists what needs attention (one campaign paused itself).
+  await page.getByRole("button", { name: "1 item needs your attention" }).click();
+  await expect(page.getByRole("dialog", { name: "Needs attention" })).toContainText("Accounting firms Q4 paused itself");
+  await page.keyboard.press("Escape");
+
   const attention = page.getByTestId("attention");
   await expect(attention).toContainText("2 statements the playbook does not support");
-  await expect(attention).toContainText("Accounting firms Q4 paused itself");
   await expect(attention).toContainText("Playbook version 3 is waiting for your decision");
-  await expect(attention).toContainText("the new version is ahead");
   await attention.getByRole("link", { name: /the new version is ahead/ }).click();
   await expect(page).toHaveURL(/Dental%20clinics%20pilot\/experiments/);
+});
 
-  // Search in the top bar narrows the campaign list.
-  await page.getByRole("searchbox", { name: "Search campaigns" }).fill("dental");
-  await page.getByRole("searchbox", { name: "Search campaigns" }).press("Enter");
-  await expect(page.getByRole("heading", { name: DENTAL, level: 2 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: ACCOUNTING, level: 2 })).toHaveCount(0);
+test("the command palette jumps to any campaign section, and the grid filters by name", async () => {
+  await page.goto("/dashboard");
+  await page.keyboard.press("Control+k");
+  const search = page.getByRole("combobox", { name: "Search campaigns and pages" });
+  await search.fill("accounting leads");
+  await expect(page.getByRole("option")).toHaveCount(1);
+  await search.press("Enter");
+  await expect(page).toHaveURL(/Accounting%20firms%20Q4\/leads/);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("Leads");
 
-  await page.getByRole("navigation", { name: "Dashboard" }).getByRole("link", { name: "Background work" }).click();
+  await page.goto("/dashboard/campaigns");
+  await page.getByLabel("Filter campaigns").fill("dental");
+  const grid = page.getByTestId("campaign-grid");
+  await expect(grid.getByRole("link", { name: DENTAL })).toBeVisible();
+  await expect(grid.getByRole("link", { name: ACCOUNTING })).toHaveCount(0);
+  await page.getByLabel("Filter campaigns").fill("zzz");
+  await expect(page.getByText("No campaign matches")).toBeVisible();
+
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Background work" }).click();
   await expect(page.getByRole("heading", { name: "Background work", level: 1 })).toBeVisible();
   await expect(page.getByText("No background work yet")).toBeVisible();
 });
 
 test("a campaign's sales performance is shown as the engine counted it", async () => {
-  await openCampaign(page, ACCOUNTING);
+  await openCampaign(ACCOUNTING);
 
   await expect(page.getByTestId("pause-reason")).toContainText("the budget of $32.00 was reached (spent $32.05)");
-  const stat = (label: string) => page.locator(`[data-stat="${label}"]`);
+  const stat = (name: string) => page.locator(`[data-stat="${name}"]`);
   await expect(stat("Total calls")).toContainText("69");
   await expect(stat("Answered")).toContainText("64");
   await expect(stat("Conversions")).toContainText("16");
@@ -133,23 +152,21 @@ test("a campaign's sales performance is shown as the engine counted it", async (
   await expect(page.getByTestId("budget-remaining")).toHaveText("$0.00");
 
   // Objections, most frequent first, with how often they were handled.
-  const objections = page.locator("section", { has: page.getByRole("heading", { name: "Objections" }) }).locator("tbody tr");
+  const objections = panel("Objections").locator("tbody tr");
   await expect(objections.nth(0)).toContainText("Price");
   await expect(objections.nth(0)).toContainText("25");
   await expect(objections.nth(0)).toContainText("4%");
   await expect(objections.nth(1)).toContainText("Competitor");
 
-  const lost = page.locator("section", { has: page.getByRole("heading", { name: "Why calls were lost" }) });
-  await expect(lost).toContainText("Price");
-  await expect(lost).toContainText("24");
-  await expect(lost).toContainText("Timing");
-  await expect(page.locator("section", { has: page.getByRole("heading", { name: "Competitors mentioned" }) })).toContainText("Ledgerpro");
+  await expect(panel("Why calls were lost")).toContainText("Price");
+  await expect(panel("Why calls were lost")).toContainText("24");
+  await expect(panel("Competitors mentioned")).toContainText("Ledgerpro");
 
-  const versions = page.locator("section", { has: page.getByRole("heading", { name: "By playbook version" }) });
+  const versions = panel("By playbook version");
   await expect(versions.locator("tbody tr", { hasText: "Version 2" })).toContainText("Best so far");
   await expect(versions.locator("tbody tr", { hasText: "Version 2" })).toContainText("29.4%");
   await expect(versions.locator("tbody tr", { hasText: "Version 1" })).not.toContainText("Best so far");
-  const languages = page.locator("section", { has: page.getByRole("heading", { name: "By language" }) });
+  const languages = panel("By language");
   await expect(languages.locator("tbody tr", { hasText: "Arabic" })).toContainText("30.0%");
   // Five unanswered calls have no language: too few to compare, and no rate is invented for them.
   await expect(languages.locator("tbody tr", { hasText: "Not detected" })).toContainText("Too few calls");
@@ -157,12 +174,13 @@ test("a campaign's sales performance is shown as the engine counted it", async (
   await expect(alertWith("the playbook does not support")).toContainText("Said setup is free");
 });
 
-test("lead intelligence: filters, scores with their evidence, objections and next action", async () => {
-  await openCampaign(page, ACCOUNTING, "Leads");
-  await expect(page.getByText("80 leads")).toBeVisible();
+test("lead workspace: filters, scores with their evidence, objections and next action", async () => {
+  await openCampaign(ACCOUNTING, "Leads");
+  await expect(page.getByTestId("lead-count")).toHaveText("80 leads");
 
-  await page.getByRole("group", { name: "Lead quality" }).getByRole("button", { name: "Hot" }).click();
-  await expect(page.getByText("16 leads match")).toBeVisible();
+  const quality = page.getByRole("group", { name: "Lead quality" });
+  await quality.getByRole("button", { name: "Hot" }).click();
+  await expect(page.getByTestId("lead-count")).toHaveText("16 leads match");
   const first = page.locator("tbody tr").first();
   await expect(first).toContainText("Maria Okafor");
   await expect(first).toContainText("100");
@@ -170,50 +188,112 @@ test("lead intelligence: filters, scores with their evidence, objections and nex
 
   await page.getByLabel("Buying intent").selectOption("medium");
   await expect(page.getByText("No leads match these filters")).toBeVisible();
-  await page.getByLabel("Buying intent").selectOption("");
-  await page.getByRole("group", { name: "Lead quality" }).getByRole("button", { name: "All" }).click();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.getByTestId("lead-count")).toHaveText("80 leads");
   await page.getByLabel("Status").selectOption("callback");
-  await expect(page.getByText("1 lead match")).toBeVisible();
+  await expect(page.getByTestId("lead-count")).toHaveText("1 lead match");
   await expect(page.locator("tbody tr")).toContainText(["Daniel Reyes"]);
   await page.getByLabel("Status").selectOption("");
 
   await page.getByLabel("Search leads").fill("okafor");
-  await expect(page.getByText("1 lead match")).toBeVisible();
-  await page.getByRole("button", { name: "Maria Okafor" }).click();
+  await expect(page.getByTestId("lead-count")).toHaveText("1 lead match");
+  await page.getByRole("button", { name: "Maria Okafor", exact: true }).click();
 
-  const panel = page.getByRole("dialog", { name: "Lead details" });
-  await expect(panel.getByRole("heading", { name: "Maria Okafor" })).toBeVisible();
-  await expect(panel).toContainText("Okafor & Lane Accounting");
+  const profile = page.getByRole("dialog", { name: "Lead details" });
+  await expect(profile.getByRole("heading", { name: "Maria Okafor" })).toBeVisible();
+  await expect(profile).toContainText("Okafor & Lane Accounting");
   for (const factor of ["Fits the target customer", "Has a relevant need", "Is the decision-maker", "Buying timeline", "Budget fits", "Expressed interest"]) {
-    await expect(panel.getByText(factor)).toBeVisible();
+    await expect(profile.getByText(factor)).toBeVisible();
   }
-  await expect(panel).toContainText("+25"); // the points the need contributed
-  await expect(panel).toContainText("We lose most of a week on month-end.");
-  await expect(panel).toContainText("High (88)");
-  await expect(panel).toContainText("Recommended next action");
-  await expect(panel).toContainText("1 of 1 handled");
-  await expect(panel).toContainText("Month-end close takes four days");
-  await expect(panel.getByRole("heading", { name: "Calls (2)" })).toBeVisible();
-  await panel.getByRole("button", { name: "Show transcript" }).first().click();
-  await expect(panel).toContainText("Tuesday at ten.");
+  await expect(profile).toContainText("+25"); // the points the need contributed
+  await expect(profile).toContainText("We lose most of a week on month-end.");
+  await expect(profile).toContainText("High (88)");
+  await expect(profile).toContainText("Recommended next action");
+  await expect(profile).toContainText("1 of 1 handled");
+  await expect(profile).toContainText("Month-end close takes four days");
+  await expect(profile.getByRole("heading", { name: "Calls (2)" })).toBeVisible();
+  await profile.getByRole("button", { name: "Show transcript" }).first().click();
+  await expect(profile).toContainText("Tuesday at ten.");
   await page.keyboard.press("Escape");
-  await expect(panel).toBeHidden();
+  await expect(profile).toBeHidden();
 });
 
 test("a lead nobody has called has no score, and the page says so", async () => {
-  await openCampaign(page, ACCOUNTING, "Leads");
+  await openCampaign(ACCOUNTING, "Leads");
   await page.getByLabel("Status").selectOption("pending");
   await page.getByRole("group", { name: "Lead quality" }).getByRole("button", { name: "Unscored" }).click();
-  await expect(page.getByText("17 leads match")).toBeVisible();
+  await expect(page.getByTestId("lead-count")).toHaveText("17 leads match");
   await page.locator("tbody tr").last().click();
-  const panel = page.getByRole("dialog", { name: "Lead details" });
-  await expect(panel).toContainText("No score yet");
-  await expect(panel).toContainText("Not assessed");
-  await expect(panel).toContainText("This lead has not been called yet.");
+  const profile = page.getByRole("dialog", { name: "Lead details" });
+  await expect(profile).toContainText("No score yet");
+  await expect(profile).toContainText("Not assessed");
+  await expect(profile).toContainText("This lead has not been called yet.");
+  await profile.getByRole("button", { name: "Close" }).click();
+});
+
+test("call workspace: the log, a call's summary, follow-up and transcript, and calling one number", async () => {
+  await openCampaign(ACCOUNTING, "Calls");
+  const log = page.getByTestId("call-log");
+  await expect(log.getByRole("listitem")).toHaveCount(69);
+
+  await page.getByRole("group", { name: "Show calls" }).getByRole("button", { name: "Converted" }).click();
+  await expect(log.getByRole("listitem")).toHaveCount(16);
+  await log.getByRole("button", { name: /Maria Okafor/ }).click();
+  const detail = panel("Maria Okafor");
+  await expect(detail).toContainText("Confirmed budget with her partner and booked a demo for Tuesday.");
+  await expect(detail).toContainText("Send the calendar invite for Tuesday's demo and the pricing sheet.");
+  await expect(detail).toContainText("9 / 10"); // the reviewer's interest score
+  await expect(detail.getByTestId("transcript")).toContainText("Tuesday at ten.");
+
+  // Calling one number: checked here, confirmed by the person, and refused by the engine
+  // in this test because no phone provider is configured. The refusal is shown, not hidden.
+  await page.getByLabel("Phone number").fill("123");
+  await page.getByRole("button", { name: "Call", exact: true }).click();
+  await expect(page.getByText("Enter the full number with its country code")).toBeVisible();
+  await page.getByLabel("Phone number").fill("+14155550999");
+  await page.getByRole("button", { name: "Call", exact: true }).click();
+  await expect(page.getByRole("group", { name: "Confirm calling" })).toContainText("This places a real phone call to +14155550999");
+  await page.getByRole("button", { name: "Yes, call now" }).click();
+  await expect(alertWith("cannot place calls, missing settings")).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(log.getByRole("listitem")).toHaveCount(16); // nothing was placed
+});
+
+test("campaign controls and calling rules: start is confirmed, rules are validated and saved", async () => {
+  await openCampaign(ACCOUNTING);
+  await page.getByRole("button", { name: "Start dialing" }).click();
+  await expect(page.getByRole("group", { name: "Confirm starting" })).toContainText("real phone calls");
+  await page.getByRole("button", { name: "Yes, start dialing" }).click();
+  await expect(alertWith("cannot place calls, missing settings")).toBeVisible(); // the engine's own refusal
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  await sections().getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByLabel("Budget (USD)")).toHaveValue("32");
+  await expect(page.getByText("No changes.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save rules" })).toBeDisabled();
+
+  await page.getByLabel("Earliest call").fill("20:00");
+  await page.getByRole("button", { name: "Save rules" }).click();
+  await expect(page.getByText("Must be later than the start.")).toBeVisible();
+  await page.getByRole("button", { name: "Discard" }).click();
+  await expect(page.getByLabel("Earliest call")).toHaveValue("09:00");
+
+  await page.getByLabel("Calls per day").fill("150");
+  await page.getByRole("button", { name: "Sun" }).click();
+  await expect(page.getByText("You have unsaved changes.")).toBeVisible();
+  await page.getByRole("button", { name: "Save rules" }).click();
+  await expect(toast("Calling rules saved.")).toBeVisible();
+
+  await page.reload(); // stored on the engine, not only on this screen
+  await expect(page.getByLabel("Calls per day")).toHaveValue("150");
+  await expect(page.getByRole("button", { name: "Sun" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Budget (USD)")).toHaveValue("32"); // untouched settings are kept
+  await sections().getByRole("link", { name: "Performance" }).click();
+  await expect(panel("Budget and limits")).toContainText("150");
 });
 
 test("coach recommendations can be reviewed, rejected, approved and rolled back", async () => {
-  await openCampaign(page, ACCOUNTING, "Coach & playbook");
+  await openCampaign(ACCOUNTING, "Coach & playbook");
 
   // The coach needs an AI model. The test engine has no key, and the page must say so, not invent a draft.
   await page.getByRole("button", { name: "Ask the coach for improvements" }).click();
@@ -238,7 +318,7 @@ test("coach recommendations can be reviewed, rejected, approved and rolled back"
   await card(4).getByRole("button", { name: "Reject" }).click();
   await card(4).getByLabel("Why are you rejecting it?").fill("Demo slots are not agreed yet.");
   await card(4).getByRole("button", { name: "Reject version 4" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Version 4 was rejected. Calls are unchanged." })).toBeVisible();
+  await expect(toast("Version 4 was rejected. Calls are unchanged.")).toBeVisible();
   await expect(card(4)).toContainText("Rejected");
   await expect(card(2)).toContainText("Live");
 
@@ -248,13 +328,13 @@ test("coach recommendations can be reviewed, rejected, approved and rolled back"
   await expect(card(3)).toContainText("Awaiting your approval");
   await card(3).getByRole("button", { name: "Approve and publish" }).click();
   await card(3).getByRole("button", { name: "Yes, publish version 3" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Version 3 is now live." })).toBeVisible();
+  await expect(toast("Version 3 is now live.")).toBeVisible();
   await expect(card(3)).toContainText("Live");
   await expect(card(2)).toContainText("Earlier version");
 
   await card(2).getByRole("button", { name: "Roll back to version 2" }).click();
   await card(2).getByRole("button", { name: "Yes, roll back" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Version 2 is now live." })).toBeVisible();
+  await expect(toast("Version 2 is now live.")).toBeVisible();
   await expect(card(2)).toContainText("Live");
   await expect(card(3)).toContainText("Earlier version");
 
@@ -265,7 +345,7 @@ test("coach recommendations can be reviewed, rejected, approved and rolled back"
 });
 
 test("a new A/B test shows its sample sizes and names no winner before there is evidence", async () => {
-  await openCampaign(page, ACCOUNTING, "A/B tests");
+  await openCampaign(ACCOUNTING, "A/B tests");
 
   await expect(page.getByRole("heading", { name: "Start an A/B test" })).toBeVisible();
   const version = page.getByLabel(/Version to test against live version 2/);
@@ -273,7 +353,7 @@ test("a new A/B test shows its sample sizes and names no winner before there is 
   await version.selectOption("3");
   await page.getByLabel("Answered leads needed on each side").fill("10");
   await page.getByRole("button", { name: "Start the test" }).click();
-  await expect(alertWith("at least 30 answered leads")).toBeVisible();
+  await expect(page.getByText("Each side needs at least 30 answered leads")).toBeVisible();
   await page.getByLabel("Answered leads needed on each side").fill("30");
   await page.getByLabel("Name (optional)").fill("Month-end opening");
   await page.getByRole("button", { name: "Start the test" }).click();
@@ -290,13 +370,13 @@ test("a new A/B test shows its sample sizes and names no winner before there is 
 
   await page.getByRole("button", { name: "Stop the test" }).click();
   await page.getByRole("button", { name: "Yes, stop the test" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "The test was stopped." })).toBeVisible();
-  await expect(page.locator("section", { has: page.getByRole("heading", { name: "Earlier tests" }) })).toContainText("Stopped, live version kept");
+  await expect(toast("The test was stopped.")).toBeVisible();
+  await expect(panel("Earlier tests")).toContainText("Stopped, live version kept");
   await expect(page.getByRole("heading", { name: "Start an A/B test" })).toBeVisible();
 });
 
 test("a test with enough evidence can be promoted, and the tested version goes live", async () => {
-  await openCampaign(page, DENTAL, "A/B tests");
+  await openCampaign(DENTAL, "A/B tests");
 
   await expect(page.getByText("New version is ahead")).toBeVisible();
   await expect(page.getByTestId("test-summary")).toContainText("Version 2 converts 34.8% of answered leads against 9.1% for version 1.");
@@ -307,26 +387,27 @@ test("a test with enough evidence can be promoted, and the tested version goes l
 
   await page.getByRole("button", { name: "Make version 2 live" }).click();
   await page.getByRole("button", { name: "Yes, make version 2 live" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Version 2 is now live and the test has ended." })).toBeVisible();
-  await expect(page.locator("section", { has: page.getByRole("heading", { name: "Earlier tests" }) })).toContainText("New version made live");
+  await expect(toast("Version 2 is now live and the test has ended.")).toBeVisible();
+  await expect(panel("Earlier tests")).toContainText("New version made live");
 
-  await page.getByRole("navigation", { name: "Campaign sections" }).getByRole("link", { name: "Coach & playbook" }).click();
+  await sections().getByRole("link", { name: "Coach & playbook" }).click();
   await expect(page.locator("section", { has: page.getByTestId("version-2") }).last()).toContainText("Live");
 });
 
 test("a campaign with no calls shows empty states, not zeros dressed up as results", async () => {
-  await openCampaign(page, EMPTY);
+  await openCampaign(EMPTY);
   await expect(page.getByText("No calls yet", { exact: true })).toBeVisible();
   await expect(page.getByText("No objections have been recorded in reviewed calls yet.")).toBeVisible();
   await expect(page.getByText("No budget is set for this campaign")).toBeVisible();
   await expect(page.getByText("Cost per conversion")).toHaveCount(0);
 
-  const tabs = page.getByRole("navigation", { name: "Campaign sections" });
-  await tabs.getByRole("link", { name: "Leads" }).click();
+  await sections().getByRole("link", { name: "Leads" }).click();
   await expect(page.getByText("No leads in this campaign yet")).toBeVisible();
-  await tabs.getByRole("link", { name: "Coach & playbook" }).click();
+  await sections().getByRole("link", { name: "Calls" }).click();
+  await expect(page.getByText("No calls yet", { exact: true })).toBeVisible();
+  await sections().getByRole("link", { name: "Coach & playbook" }).click();
   await expect(page.getByText("No draft is waiting.")).toBeVisible();
-  await tabs.getByRole("link", { name: "A/B tests" }).click();
+  await sections().getByRole("link", { name: "A/B tests" }).click();
   await expect(page.getByText("No version to test yet")).toBeVisible();
 });
 
@@ -346,10 +427,44 @@ test("errors from the engine are shown with a way to retry", async () => {
   await expect(alertWith("The calling engine could not be reached.")).toBeVisible();
   await page.unroute("**/api/backend/campaigns");
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("heading", { name: ACCOUNTING, level: 2 })).toBeVisible();
+  await expect(page.getByTestId("campaign-grid").getByRole("link", { name: ACCOUNTING })).toBeVisible();
 });
 
-test("signing out closes the dashboard again", async () => {
+test("phones get their own navigation and layouts, with nothing scrolling sideways", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 375, height: 760 }, hasTouch: true, isMobile: true, storageState: await page.context().storageState() });
+  const phone = await context.newPage();
+  const fits = () => phone.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
+
+  await phone.goto("/dashboard");
+  await expect(phone.getByTestId("tile-calls")).toContainText("154");
+  expect(await fits()).toBe(true);
+  // The rail is replaced by a tab bar within thumb reach.
+  const tabs = phone.getByRole("navigation", { name: "Primary" });
+  await tabs.getByRole("link", { name: "Campaigns" }).click();
+  await expect(phone.getByRole("heading", { name: "Campaigns", level: 1 })).toBeVisible();
+  expect(await fits()).toBe(true);
+
+  // Lists are compact rows, not a squeezed table; a lead opens as a sheet from the bottom.
+  await phone.getByRole("list", { name: "Campaigns" }).getByRole("button", { name: new RegExp(ACCOUNTING) }).click();
+  await phone.getByRole("navigation", { name: "Campaign sections" }).getByRole("link", { name: "Leads" }).click();
+  await phone.getByRole("list", { name: "Leads" }).getByRole("button", { name: /Maria Okafor/ }).click();
+  await expect(phone.getByRole("dialog", { name: "Lead details" })).toContainText("Recommended next action");
+  expect(await fits()).toBe(true);
+  await phone.getByRole("dialog", { name: "Lead details" }).getByRole("button", { name: "Close" }).click();
+
+  for (const section of ["Calls", "Coach & playbook", "A/B tests", "Settings"]) {
+    await phone.getByRole("navigation", { name: "Campaign sections" }).getByRole("link", { name: section }).click();
+    await phone.waitForLoadState("networkidle");
+    expect(await fits(), `${section} fits a phone`).toBe(true);
+  }
+  await phone.getByRole("link", { name: "Back to Accounting firms Q4" }).click(); // the phone's way back
+  await expect(phone.getByTestId("pause-reason")).toBeVisible();
+  await context.close();
+});
+
+test("signing out closes the console again", async () => {
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Account" }).click();
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto("/dashboard");
