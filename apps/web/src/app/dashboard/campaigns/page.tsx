@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Megaphone, Plus, Search } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { budgetUse, count, languageName, money } from "@/lib/api/format";
 import { campaignListSchema, type Campaign } from "@/lib/api/schemas";
@@ -89,7 +89,8 @@ function CampaignGrid() {
     <>
       <PageHeader
         title="Campaigns"
-        description="Every campaign on this engine. Open one to see its calls, leads and playbook."
+        hint="campaign"
+        description="Each campaign is one calling project. Open one to see its calls, leads and playbook."
         actions={
           isAdmin ? (
             <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
@@ -114,11 +115,26 @@ function CampaignGrid() {
         ) : error ? (
           <ErrorState message={error.message} onRetry={reload} />
         ) : data && data.length === 0 ? (
-          <EmptyState title="No campaigns yet">
-            Create one on the calling engine with <code className="t-figure rounded-chip bg-sunken px-1">callagent onboard</code>. It appears here as soon as it exists.
+          <EmptyState
+            title="No campaigns yet"
+            icon={Megaphone}
+            action={
+              isAdmin ? (
+                <>
+                  <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
+                    <Plus className="size-3.5" aria-hidden="true" /> Create your first campaign
+                  </Link>
+                  <Link href="/dashboard/help#first-call" className={buttonClass("ghost")}>
+                    See how it works
+                  </Link>
+                </>
+              ) : undefined
+            }
+          >
+            A campaign holds who the agent calls, what it says and the rules it follows.{isAdmin ? " You fill in one short form; the agent starts from exactly what you write." : " An admin creates the first one."}
           </EmptyState>
         ) : rows.length === 0 ? (
-          <EmptyState title="No campaign matches">Change the name filter or show all campaigns.</EmptyState>
+          <EmptyState title="No campaign matches" icon={Search}>Change the name filter or show all campaigns.</EmptyState>
         ) : (
           <Panel flush>
             <DataTable columns={columns} rows={rows} rowKey={(c) => c.id} caption="Campaigns" onRowClick={(c) => router.push(href(c.name))}

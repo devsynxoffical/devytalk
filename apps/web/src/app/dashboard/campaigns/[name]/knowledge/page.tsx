@@ -386,7 +386,7 @@ export default function KnowledgePage({ params }: { params: Promise<{ name: stri
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 ? (
-        <EmptyState title="The agent has no documents yet">{!canOperate && "An operator or admin can add them. "}Upload price lists, product sheets, FAQs or case studies, or add your website. The agent looks facts up in them during calls instead of guessing.</EmptyState>
+        <EmptyState icon={FileText} title="The agent has no documents yet">{!canOperate && "An operator or admin can add them. "}Upload price lists, product sheets, FAQs or case studies, or add your website. The agent looks facts up in them during calls instead of guessing.</EmptyState>
       ) : data ? (
         <Sources campaign={name} documents={data} onChanged={changed} />
       ) : null}

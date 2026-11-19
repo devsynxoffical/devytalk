@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Check, Pause, Play, TriangleAlert } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { count, languageName } from "@/lib/api/format";
-import { campaignSchema } from "@/lib/api/schemas";
+import { campaignSchema, rulesSchema, statusSchema } from "@/lib/api/schemas";
 import { cn } from "@/lib/cn";
 import { campaignTone } from "./Shell";
+import { Hint } from "./Hint";
 import { useAccess } from "./access";
+import { startChecks } from "./start-checks";
 import { Button, Confirm, Skeleton, Status } from "./ui";
 
 const TABS = [
@@ -31,6 +33,10 @@ export function CampaignHeader({ name }: { name: string }) {
   const [asking, setAsking] = useState<"start" | "pause" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Loaded only once the person asks to start: what they should know before real calls go out.
+  const status = useApi(asking === "start" ? backendUrl(["status"]) : null, statusSchema);
+  const rules = useApi(asking === "start" ? backendUrl(["campaigns", name, "rules"]) : null, rulesSchema);
+  const checks = data && status.data && rules.data ? startChecks(data, status.data, rules.data) : null;
 
   async function run(action: "start" | "pause") {
     setBusy(true);
@@ -55,9 +61,12 @@ export function CampaignHeader({ name }: { name: string }) {
           <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-fg-3">
             {data && state ? (
               <>
-                <Status tone={state.tone} live={state.live}>
-                  {state.text}
-                </Status>
+                <span className="inline-flex items-center gap-1.5">
+                  <Status tone={state.tone} live={state.live}>
+                    {state.text}
+                  </Status>
+                  {data.stop_reason && !data.running && <Hint term="paused-itself" />}
+                </span>
                 <span>
                   <span className="t-figure text-fg-2">{count(data.stats.total ?? 0)}</span> leads
                 </span>
@@ -101,15 +110,40 @@ export function CampaignHeader({ name }: { name: string }) {
               setError(null);
             }}
           >
-            {asking === "start"
-              ? "The engine will start placing real phone calls to leads that are due, inside this campaign's calling days, hours and budget."
-              : "No new calls will be placed. Calls already in progress finish normally."}
+            {asking === "start" ? (
+              <>
+                <p>The engine will start placing real phone calls to leads that are due, inside this campaign&apos;s calling days, hours and budget.</p>
+                {checks && (
+                  <ul className="mt-2.5 space-y-1.5" data-testid="start-checks">
+                    {checks.map((check) => (
+                      <li key={check.id} className="flex items-start gap-2">
+                        {check.ok ? <Check className="mt-0.5 size-3.5 shrink-0 text-accent" aria-label="Ready" /> : <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warn-mark" aria-label="Needs attention" />}
+                        <span className={check.ok ? undefined : "font-medium text-fg"}>
+                          {check.text}
+                          {check.fix && (
+                            <>
+                              {" "}
+                              <Link href={check.fix.href} className="font-medium text-accent hover:underline">
+                                {check.fix.label}
+                              </Link>
+                            </>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              "No new calls will be placed. Calls already in progress finish normally."
+            )}
           </Confirm>
         </div>
       )}
 
-      <nav aria-label="Campaign sections" className="-mx-4 mt-4 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-6 sm:px-6">
-        <ul className="flex gap-5">
+      {/* On a phone the sections scroll sideways; the fading edge says there is more. */}
+      <nav aria-label="Campaign sections" className="-mx-4 mt-4 overflow-x-auto px-4 [scrollbar-width:none] max-md:[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)] sm:-mx-6 sm:px-6">
+        <ul className="flex gap-5 max-md:pr-8">
           {TABS.map((tab) => {
             const href = base + tab.segment;
             const active = decodeURIComponent(pathname) === decodeURIComponent(href);

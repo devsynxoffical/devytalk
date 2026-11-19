@@ -264,25 +264,3 @@ export function GettingStarted({ campaign }: { campaign: Campaign }) {
     </Panel>
   );
 }
-
-/** Shown on the overview while real calls are not possible yet. */
-export function ConnectionsBanner() {
-  const { data } = useApi(backendUrl(["status"]), statusSchema);
-  if (!data || data.ready_for_calls) return null;
-  const missing = data.checks.filter((c) => !c.ok).length;
-  return (
-    <Banner
-      tone="warn"
-      role="status"
-      testId="connections-banner"
-      title="Calls cannot be placed or answered yet"
-      actions={
-        <Link href="/dashboard/setup" className="shrink-0 text-[13px] font-medium text-accent hover:underline">
-          Open setup
-        </Link>
-      }
-    >
-      {missing} of {data.checks.length} connections to the phone, speech and AI providers are missing on the calling engine.
-    </Banner>
-  );
-}

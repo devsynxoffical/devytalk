@@ -57,6 +57,8 @@ const fromPage = (tab: Page, method: string, url: string, body?: unknown) =>
 const alertWith = (text: string) => page.getByRole("alert").filter({ hasText: text });
 const toast = (text: string) => page.getByRole("status").filter({ hasText: text });
 const sections = () => page.getByRole("navigation", { name: "Campaign sections" });
+/** The rail: every page of the console is one click away in it. */
+const rail = (tab: Page) => tab.getByRole("navigation", { name: "Primary" });
 const panel = (heading: string) => page.locator("section", { has: page.getByRole("heading", { name: heading }) });
 
 async function openCampaign(name: string, tab?: string) {
@@ -166,6 +168,45 @@ test("the command palette jumps to any campaign section, and the grid filters by
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Background work" }).click();
   await expect(page.getByRole("heading", { name: "Background work", level: 1 })).toBeVisible();
   await expect(page.getByText("No background work yet")).toBeVisible();
+});
+
+test("every page is in the rail, and the words on the screens are explained where they appear", async () => {
+  await page.goto("/dashboard");
+  await expect(page.getByTestId("tile-conversions")).toBeVisible();
+  // Nothing is hidden in a menu: the rail lists the pages, and the account menu holds only the person's own things.
+  for (const name of ["Do not call", "Usage", "Team", "Organization", "API keys", "Webhooks", "Help"]) await expect(rail(page).getByRole("link", { name, exact: true })).toBeVisible();
+  await expect(rail(page).getByRole("link", { name: /^Setup/ })).toContainText("1/5"); // how many services are connected
+  await page.getByRole("button", { name: "Account" }).click();
+  await expect(page.getByRole("dialog", { name: "Account" }).getByRole("link")).toHaveCount(0); // the engine's token has no password to change
+  await page.keyboard.press("Escape");
+
+  // A question mark beside a figure says what it means, and leads to the same word in Help.
+  await page.getByTestId("tile-conversions").getByRole("button", { name: "What does this mean?" }).click();
+  const note = page.getByRole("note");
+  await expect(note).toContainText("A call that ended in a booked meeting or a closed sale.");
+  await note.getByRole("link", { name: "More in Help" }).click();
+  await expect(page).toHaveURL(/\/dashboard\/help#conversion$/);
+  await expect(page.getByRole("heading", { name: "Help", level: 1 })).toBeVisible();
+  await expect(page.locator("#conversion")).toBeInViewport();
+  await expect(page.getByRole("heading", { name: "From a new account to the first call" })).toBeVisible();
+
+  // Help is searched as one: guides, questions and words.
+  await page.getByLabel("Search help").fill("paused itself");
+  await expect(page.getByTestId("words-Calling rules")).toContainText("The campaign stopped dialing on its own because a limit you set was reached.");
+  await expect(page.getByText("I pressed Start dialing and nothing is being called. Why?")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Step-by-step guides" })).toHaveCount(0);
+  await page.getByLabel("Search help").fill("zzzz");
+  await expect(page.getByText("Nothing in Help matches “zzzz”")).toBeVisible();
+
+  // The search in the top bar finds pages by what people call them, and words by their name.
+  await page.keyboard.press("Control+k");
+  const search = page.getByRole("combobox", { name: "Search campaigns and pages" });
+  await search.fill("billing");
+  await expect(page.getByRole("option")).toHaveCount(1);
+  await expect(page.getByRole("option")).toContainText("Usage");
+  await search.fill("hot warm");
+  await search.press("Enter");
+  await expect(page).toHaveURL(/\/dashboard\/help#hot$/);
 });
 
 test("a campaign's sales performance is shown as the engine counted it", async () => {
@@ -293,6 +334,12 @@ test("campaign controls and calling rules: start is confirmed, rules are validat
   await openCampaign(ACCOUNTING);
   await page.getByRole("button", { name: "Start dialing" }).click();
   await expect(page.getByRole("group", { name: "Confirm starting" })).toContainText("real phone calls");
+  // Before real calls go out: what is ready and what is not, with the way to fix it.
+  const checks = page.getByTestId("start-checks");
+  await expect(checks).toContainText("4 of 5 services are not connected yet, so the engine will refuse to start.");
+  await expect(checks.getByRole("link", { name: "Open setup" })).toHaveAttribute("href", "/dashboard/setup");
+  await expect(checks).toContainText(/\d+ leads are waiting to be called\./);
+  await expect(checks).toContainText("in each lead's own time zone");
   await page.getByRole("button", { name: "Yes, start dialing" }).click();
   await expect(alertWith("cannot place calls, missing settings")).toBeVisible(); // the engine's own refusal
   await page.getByRole("button", { name: "Cancel" }).click();
@@ -572,7 +619,8 @@ test("people sign in with their own account, and an admin manages the team", asy
   await tab.getByRole("button", { name: "Account" }).click();
   await expect(tab.getByTestId("identity")).toContainText("Test Admin");
   await expect(tab.getByTestId("identity")).toContainText("admin@example.test");
-  await tab.getByRole("link", { name: "Team" }).click();
+  await tab.keyboard.press("Escape");
+  await rail(tab).getByRole("link", { name: "Team" }).click();
   const team = tab.getByTestId("team");
   for (const email of ["admin@example.test", "operator@example.test", "viewer@example.test"]) await expect(team).toContainText(email);
   const own = team.locator("tr", { hasText: "admin@example.test" });
@@ -705,11 +753,18 @@ test("a campaign is created and set up in the console for outbound and inbound c
   const NAME = "Spring outreach";
   // The overview says plainly that real calls are not possible yet, and Setup says what is missing.
   await page.goto("/dashboard");
-  await expect(page.getByTestId("connections-banner")).toContainText("4 of 5 connections");
-  await page.getByTestId("connections-banner").getByRole("link", { name: "Open setup" }).click();
+  const guide = page.getByTestId("launch-guide");
+  await expect(guide).toContainText("3 of 4 done. Next: connect the services a call needs.");
+  await expect(guide.getByRole("listitem").filter({ hasText: "Connect the services" })).toContainText("1 of 5 services connected");
+  await guide.getByRole("link", { name: "Open setup" }).click();
   await expect(page.getByTestId("setup-state")).toContainText("Calls cannot be placed or answered yet");
+  await expect(page.getByTestId("setup-state")).toContainText("1 of 5 connected");
   const connections = page.getByTestId("connections");
-  await expect(connections.locator("li", { hasText: "Phone provider (Twilio)" })).toContainText("TWILIO_ACCOUNT_SID");
+  // Each service is named by what it does in a call, with what to do and the settings still missing.
+  const phoneLine = connections.locator("li", { hasText: "Phone provider (Twilio)" });
+  await expect(phoneLine).toContainText("The phone line");
+  await expect(phoneLine).toContainText("Buy a phone number there");
+  await expect(phoneLine).toContainText("TWILIO_ACCOUNT_SID");
   await expect(connections.locator("li", { hasText: "Public address of this engine" })).toContainText("Connected");
   await expect(page.getByTestId("copy-value")).toHaveText("https://engine.example.test/twilio/inbound");
 
@@ -793,7 +848,8 @@ test("a second organization is separate from the first, down to the same campaig
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Account" }).click();
   await expect(page.getByTestId("identity").getByTestId("organization")).toHaveText("Default organization");
-  await page.getByRole("link", { name: "Organizations" }).click();
+  await page.keyboard.press("Escape");
+  await rail(page).getByRole("link", { name: "Organizations" }).click();
   await expect(page.getByTestId("organizations")).toContainText("Default organization");
   await page.getByRole("button", { name: "New organization" }).click();
   await page.getByLabel("Organization name").fill("Bolt Logistics");
@@ -872,8 +928,7 @@ test("an organization calls from its own numbers, sets its own transfers and boo
   expect(JSON.stringify((await fromPage(bolt.tab, "GET", "/api/backend/organization/settings")).body)).not.toContain("bolt-signing-secret");
 
   // A key for one of its systems: shown once, then only its first characters.
-  await bolt.tab.getByRole("button", { name: "Account" }).click();
-  await bolt.tab.getByRole("link", { name: "API keys" }).click();
+  await rail(bolt.tab).getByRole("link", { name: "API keys" }).click();
   await expect(bolt.tab.getByText("No API keys yet")).toBeVisible();
   await bolt.tab.getByRole("button", { name: "New key" }).click();
   await bolt.tab.getByLabel("What will use it").fill("CRM sync");
@@ -912,8 +967,7 @@ test("an organization keeps its own do-not-call list, erases a person on request
   await expect(tab.getByTestId("import-report")).toContainText("2 leads added.");
 
   // The list starts empty; a number is added by hand, and something that is not a number is refused.
-  await tab.getByRole("button", { name: "Account" }).click();
-  await tab.getByRole("link", { name: "Do not call" }).click();
+  await rail(tab).getByRole("link", { name: "Do not call" }).click();
   await expect(tab.getByText("Nobody is on the list yet")).toBeVisible();
   await tab.getByLabel("Phone number", { exact: true }).fill("not a number");
   await tab.getByRole("button", { name: "Add number" }).click();
@@ -984,8 +1038,7 @@ test("an organization has its own systems told about calls and bookings, at addr
   const tab = bolt.tab;
   const said = (text: string) => tab.getByRole("status").filter({ hasText: text });
   await tab.goto("/dashboard");
-  await tab.getByRole("button", { name: "Account" }).click();
-  await tab.getByRole("link", { name: "Webhooks" }).click();
+  await rail(tab).getByRole("link", { name: "Webhooks" }).click();
   await expect(tab.getByText("No endpoints yet")).toBeVisible();
 
   // Only an https address is accepted; one inside a network is refused by the engine, not by the form.
@@ -1133,8 +1186,7 @@ test("a person joins by a link and chooses their own password; a reset link gets
 
 test("usage is read month by month, adds up to its lines, and belongs to one organization", async ({ browser, request }) => {
   await page.goto("/dashboard");
-  await page.getByRole("button", { name: "Account" }).click();
-  await page.getByRole("link", { name: "Usage" }).click();
+  await rail(page).getByRole("link", { name: "Usage" }).click();
   await expect(page.getByRole("heading", { name: "Usage", level: 1 })).toBeVisible();
   const statement = page.getByTestId("statement");
   await expect(statement).toContainText("Still open"); // this month is not over
@@ -1204,6 +1256,15 @@ test("phones get their own navigation and layouts, with nothing scrolling sidewa
   expect(await fits()).toBe(true);
   // The rail is replaced by a tab bar within thumb reach.
   const tabs = phone.getByRole("navigation", { name: "Primary" });
+  // Everything that is not a tab is one tap further, under More.
+  await tabs.getByRole("button", { name: "More" }).click();
+  const more = phone.getByRole("dialog", { name: "More" });
+  await expect(more.getByRole("link", { name: /^Help/ })).toBeVisible();
+  await expect(more.getByRole("link", { name: /^Setup/ })).toContainText("1/5");
+  expect(await fits()).toBe(true);
+  await more.getByRole("link", { name: /^Do not call/ }).click();
+  await expect(phone.getByRole("heading", { name: "Do not call", level: 1 })).toBeVisible();
+  await expect(phone.getByRole("dialog", { name: "More" })).toHaveCount(0);
   await tabs.getByRole("link", { name: "Campaigns" }).click();
   await expect(phone.getByRole("heading", { name: "Campaigns", level: 1 })).toBeVisible();
   expect(await fits()).toBe(true);
@@ -1221,7 +1282,7 @@ test("phones get their own navigation and layouts, with nothing scrolling sidewa
     await phone.waitForLoadState("networkidle");
     expect(await fits(), `${section} fits a phone`).toBe(true);
   }
-  for (const path of ["/dashboard/setup", "/dashboard/requests", "/dashboard/team", "/dashboard/account", "/dashboard/campaigns/new"]) {
+  for (const path of ["/dashboard/setup", "/dashboard/help", "/dashboard/requests", "/dashboard/team", "/dashboard/account", "/dashboard/campaigns/new"]) {
     await phone.goto(path);
     await phone.waitForLoadState("networkidle");
     expect(await fits(), `${path} fits a phone`).toBe(true);

@@ -21,6 +21,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+  const [shown, setShown] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,9 +59,15 @@ export function LoginForm() {
           <Field label="Email">
             <Input type="email" autoComplete="username" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!error} autoFocus />
           </Field>
-          <Field label="Password">
-            <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={!!error} />
-          </Field>
+          <div className="relative">
+            <Field label="Password" hint="Forgot it? An admin of your organization can send you a reset link.">
+              <Input type={shown ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={!!error} className="pr-14" />
+            </Field>
+            {/* Named "Show", not "Show password": the field alone answers to the label "Password". */}
+            <button type="button" onClick={() => setShown((v) => !v)} aria-pressed={shown} title={shown ? "Hide what you typed" : "Show what you typed"} className="absolute right-1 top-[25px] h-7 rounded-control px-2 text-[12.5px] font-medium text-accent hover:bg-sunken max-sm:top-[27px] max-sm:h-9">
+              {shown ? "Hide" : "Show"}
+            </button>
+          </div>
         </>
       ) : (
         <Field label="Access token" hint={error ? undefined : "The API token of your calling engine: the API_TOKEN setting, or the api_token file in its data folder."}>

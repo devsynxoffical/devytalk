@@ -115,8 +115,23 @@ labels, two-pane call workspace), 1280 (metric strip in one row, two-column page
 | `ErrorState`, `EmptyState` | Message, cause, and a way forward |
 | `Meter`, `Ring`, `BarRow`, `AreaChart` | Data marks; one hue per measure; hover value on the chart |
 
-Shell (`Shell.tsx`): navigation rail with a live campaign list, breadcrumbs, command
-palette on Ctrl/⌘K (campaigns and their sections), attention menu, account menu.
+Shell (`Shell.tsx`): navigation rail, breadcrumbs, command palette on Ctrl/⌘K (pages,
+campaigns and their sections, and the words Help explains), attention menu, account menu.
+
+The rail lists every page, read from one list (`nav.ts`) that also feeds the breadcrumb,
+the phone's menu and the search, so a page cannot be reachable from one and missing from
+another. Groups: the work (Overview, Campaigns with the recent ones beneath, Requests,
+Do not call), Account, Developers, and at the foot Setup (with how many services are
+connected) and Help. Pages a role may not open are left out.
+
+Guidance (added after the redesign, same visual language):
+
+| Component | Use |
+| --- | --- |
+| `Hint` | A question mark beside a word: a short explanation placed against the viewport (never clipped by a table or panel), with a link to the same word in Help. Sits beside a heading, not inside it, so the heading keeps its own name |
+| `LaunchGuide` | The way to the first call on the overview; the next step carries the button; gone once every step is done |
+| `startChecks` | What to know before dialing starts, shown in the confirmation |
+| `EmptyState` with `icon` | Every empty screen says what it is for and offers the next step where there is one |
 
 ## 6. A layout per job
 
@@ -133,16 +148,20 @@ palette on Ctrl/⌘K (campaigns and their sections), attention menu, account men
 | Settings | Form: labelled groups down the page, sticky save bar |
 | Background work | Strip and a filtered table |
 | Sign in | Split: product statement, form |
+| Setup | Status with progress, then one row per service: its role in a call, what to do, the settings still missing |
+| Help | Search, then guides in two columns, questions as disclosures, words in a two-column glossary by group |
 
 ## 7. Phones and tablets
 
-- Below 768px the rail is replaced by a four-item tab bar that respects the home
-  indicator; the account menu is a sheet.
+- Below 768px the rail is replaced by a tab bar that respects the home indicator:
+  Overview, Campaigns, Requests and More. More opens a sheet with every other page as a
+  tile (name, one line on what it is for), then the account, theme and sign out.
 - Tablets get an icon-only rail.
 - Tables become records or compact rows; nothing scrolls sideways (asserted by a
   browser test at 375px on every section, and checked at 320, 390, 768, 1024, 1280,
   1440 and 1920).
-- Drawers become bottom sheets; the campaign sections scroll horizontally; the save
+- Drawers become bottom sheets; the campaign sections scroll horizontally, with a
+  fading edge that says there is more; the save
   bar in Settings stays above the tab bar; a back chevron replaces breadcrumbs.
 
 ## 8. Motion

@@ -8,9 +8,10 @@
  * comes from the tokens in globals.css.
  */
 
-import { AlertTriangle, ArrowDown, ArrowUp, Check, ChevronDown, CircleAlert, Info, Loader2, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Check, ChevronDown, CircleAlert, Info, Loader2, RefreshCw, X, type LucideIcon } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
+import { Hint } from "./Hint";
 
 export type Tone = "pos" | "warn" | "crit" | "info" | "neutral";
 
@@ -65,13 +66,18 @@ export function Tag({ tone = "neutral", children }: { tone?: Tone; children: Rea
 
 // ----------------------------------------------------------------------------- surfaces
 
-export function Panel({ title, description, actions, children, className, flush = false, id }: { title?: ReactNode; description?: ReactNode; actions?: ReactNode; children?: ReactNode; className?: string; flush?: boolean; id?: string }) {
+export function Panel({ title, description, actions, children, className, flush = false, id, hint }: { title?: ReactNode; description?: ReactNode; actions?: ReactNode; children?: ReactNode; className?: string; flush?: boolean; id?: string; /** A glossary term explained beside the title. */ hint?: string }) {
   return (
     <section id={id} className={cn("rounded-panel border border-line bg-surface", className)}>
       {(title || actions) && (
         <header className={cn("flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 py-3", children !== null && children !== undefined && children !== false && "border-b border-line")}>
           <div className="min-w-0">
-            {title && <h2 className="t-section text-fg">{title}</h2>}
+            {title && (
+              <div className="flex items-center gap-1.5">
+                <h2 className="t-section text-fg">{title}</h2>
+                {hint && <Hint term={hint} />}
+              </div>
+            )}
             {description && <p className="t-meta mt-0.5">{description}</p>}
           </div>
           {actions && <div className="flex min-w-0 max-w-full items-center gap-2">{actions}</div>}
@@ -82,12 +88,15 @@ export function Panel({ title, description, actions, children, className, flush 
   );
 }
 
-export function PageHeader({ title, description, actions, eyebrow }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; eyebrow?: ReactNode }) {
+export function PageHeader({ title, description, actions, eyebrow, hint }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; eyebrow?: ReactNode; /** A glossary term explained beside the title. */ hint?: string }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div className="min-w-0">
         {eyebrow && <p className="t-eyebrow mb-1">{eyebrow}</p>}
-        <h1 className="t-title text-fg">{title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="t-title text-fg">{title}</h1>
+          {hint && <Hint term={hint} />}
+        </div>
         {description && <p className="mt-1 max-w-2xl text-[13.5px] text-fg-2">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -103,11 +112,14 @@ export function MetricStrip({ children, className }: { children: ReactNode; clas
   return <div className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-line bg-line xl:auto-cols-fr xl:grid-flow-col xl:grid-cols-none", className)}>{children}</div>;
 }
 
-export function Metric({ label, value, total, note, aside, testId, wide = false }: { label: string; value: ReactNode; total?: ReactNode; note?: ReactNode; aside?: ReactNode; testId?: string; wide?: boolean }) {
+export function Metric({ label, value, total, note, aside, testId, wide = false, hint }: { label: string; value: ReactNode; total?: ReactNode; note?: ReactNode; aside?: ReactNode; testId?: string; wide?: boolean; /** A glossary term explained beside the label. */ hint?: string }) {
   return (
     <div className={cn("flex min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3.5", wide && "max-xl:col-span-2")} data-stat={label} data-testid={testId}>
       <div className="min-w-0">
-        <p className="t-eyebrow sm:truncate">{label}</p>
+        <p className="t-eyebrow flex items-center gap-1">
+          <span className="sm:truncate">{label}</span>
+          {hint && <Hint term={hint} />}
+        </p>
         <p className="t-metric mt-1.5 text-fg">
           {value}
           {total !== undefined && <span className="ml-1 text-[13px] font-normal tracking-normal text-fg-3">/ {total}</span>}
@@ -199,12 +211,17 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   );
 }
 
-export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+export function EmptyState({ title, children, action, icon: Icon }: { title: string; children?: ReactNode; action?: ReactNode; icon?: LucideIcon }) {
   return (
     <div className="rounded-panel border border-dashed border-line-strong px-6 py-10 text-center">
+      {Icon && (
+        <span className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-sunken text-fg-2" aria-hidden="true">
+          <Icon className="size-5" />
+        </span>
+      )}
       <p className="t-section text-fg">{title}</p>
       {children && <div className="mx-auto mt-1 max-w-md text-[13px] text-fg-2">{children}</div>}
-      {action && <div className="mt-4 flex justify-center">{action}</div>}
+      {action && <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>
   );
 }
@@ -329,6 +346,8 @@ export type Column<T> = {
   numeric?: boolean;
   /** The row's name: shown first and larger on phones. */
   primary?: boolean;
+  /** A glossary term explained beside the heading. */
+  hint?: string;
   /** Give a value to make the column sortable. */
   sortValue?: (row: T) => string | number | null;
   render: (row: T) => ReactNode;
@@ -391,6 +410,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, caption, initi
                 ) : (
                   column.label
                 )}
+                {column.hint && <Hint term={column.hint} className="ml-1" />}
               </th>
             );
           })}

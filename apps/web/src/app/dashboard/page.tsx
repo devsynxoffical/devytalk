@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, CircleCheck, Megaphone, Plus } from "lucide-react";
 import { apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { budgetUse, count, label, money, percent } from "@/lib/api/format";
 import {
@@ -12,6 +12,7 @@ import {
   jobsSchema,
   leadListSchema,
   reportSchema,
+  statusSchema,
   timelineSchema,
   versionListSchema,
   type Campaign,
@@ -21,7 +22,8 @@ import {
   type Version,
 } from "@/lib/api/schemas";
 import { AreaChart } from "@/components/dashboard/AreaChart";
-import { ConnectionsBanner } from "@/components/dashboard/CampaignSetup";
+import { LaunchGuide } from "@/components/dashboard/LaunchGuide";
+import { useAccess } from "@/components/dashboard/access";
 import { campaignTone } from "@/components/dashboard/Shell";
 import { Banner, DataTable, EmptyState, ErrorState, Loading, Meter, Metric, MetricStrip, PageHeader, Panel, Segmented, Skeleton, Status, buttonClass, type Column, type Tone } from "@/components/dashboard/ui";
 import { BarRow, Ring, SERIES, STATUS } from "@/components/dashboard/viz";
@@ -126,8 +128,10 @@ function Activity() {
 
 function BackgroundWork() {
   const { data, error } = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
+  const busy = (data?.stats.queued ?? 0) + (data?.stats.running ?? 0);
+  const dead = data?.stats.dead ?? 0;
   return (
-    <Panel title="Background work" description="Reviews, booking notifications, training" actions={<Link href="/dashboard/system" className="text-[12.5px] font-medium text-accent hover:underline">Open</Link>} flush>
+    <Panel title="Background work" hint="background-work" description={!data ? "Reviews, booking notifications, training" : dead > 0 ? "Some jobs need you" : busy > 0 ? "Working through its queue" : "Nothing waiting, nothing failed"} actions={<Link href="/dashboard/system" className="text-[12.5px] font-medium text-accent hover:underline">Open</Link>} flush>
       {error ? (
         <p className="px-4 py-3 text-[13px] text-crit" role="alert">{error.message}</p>
       ) : (
@@ -135,7 +139,7 @@ function BackgroundWork() {
           {(["queued", "running", "dead"] as const).map((key) => (
             <div key={key} className="px-4 py-3">
               <dt className="t-eyebrow">{{ queued: "Waiting", running: "Running", dead: "Gave up" }[key]}</dt>
-              <dd className={`t-figure mt-1 text-[18px] font-medium ${key === "dead" && (data?.stats.dead ?? 0) > 0 ? "text-crit" : "text-fg"}`}>{data ? count(data.stats[key]) : "–"}</dd>
+              <dd className={`t-figure mt-1 text-[18px] font-medium ${key === "dead" && dead > 0 ? "text-crit" : "text-fg"}`}>{data ? count(data.stats[key]) : "–"}</dd>
             </div>
           ))}
         </dl>
@@ -149,23 +153,34 @@ export default function OverviewPage() {
   const campaigns = useApi(backendUrl(["campaigns"]), campaignListSchema);
   const details = useDetails(campaigns.data);
   const jobs = useApi(backendUrl(["jobs"], { limit: 1 }), jobsSchema);
+  const status = useApi(backendUrl(["status"]), statusSchema);
+  const { isAdmin } = useAccess();
 
   const header = (
     <PageHeader
       title="Overview"
       description="Where your calling campaigns stand right now, and what is waiting for a decision."
       actions={
-        <Link href="/dashboard/campaigns" className={buttonClass("primary")}>
-          All campaigns <ArrowRight className="size-3.5" aria-hidden="true" />
-        </Link>
+        <>
+          <Link href="/dashboard/campaigns" className={buttonClass(isAdmin ? "secondary" : "primary")}>
+            All campaigns <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+          {isAdmin && (
+            <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
+              <Plus className="size-3.5" aria-hidden="true" /> New campaign
+            </Link>
+          )}
+        </>
       }
     />
   );
-  const body = (node: React.ReactNode) => (
+  /** Shown until the account has placed or answered a call with every service connected. */
+  const guide = (calls: number | null) => (status.data && campaigns.data ? <LaunchGuide status={status.data} campaigns={campaigns.data} calls={calls} /> : null);
+  const body = (node: React.ReactNode, withGuide = false) => (
     <>
       {header}
       <div className="mt-5 space-y-5">
-        <ConnectionsBanner />
+        {withGuide && guide(0)}
         <div>{node}</div>
       </div>
     </>
@@ -178,14 +193,23 @@ export default function OverviewPage() {
     return body(
       <EmptyState
         title="No campaigns yet"
+        icon={Megaphone}
         action={
-          <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
-            Create your first campaign
-          </Link>
+          isAdmin ? (
+            <>
+              <Link href="/dashboard/campaigns/new" className={buttonClass("primary")}>
+                Create your first campaign
+              </Link>
+              <Link href="/dashboard/help#first-call" className={buttonClass("ghost")}>
+                See how it works
+              </Link>
+            </>
+          ) : undefined
         }
       >
-        A campaign holds what the agent says, who it calls and which number it answers.
+        A campaign holds what the agent says, who it calls and which number it answers.{isAdmin ? " It takes about five minutes to create one." : " An admin creates the first one."}
       </EmptyState>,
+      true,
     );
   }
   if (details.loading && details.items.length === 0) return body(<Loading what="Loading campaign results" />);
@@ -274,7 +298,7 @@ export default function OverviewPage() {
       {header}
 
       <div className="mt-5 space-y-5">
-        <ConnectionsBanner />
+        {guide(details.failed.length > 0 ? null : calls)}
         {details.failed.length > 0 && (
           <Banner tone="warn" role="alert" title={`Results for ${details.failed.join(", ")} could not be loaded`}>
             The totals below leave {details.failed.length === 1 ? "it" : "them"} out.
@@ -285,6 +309,7 @@ export default function OverviewPage() {
           <Metric
             testId="tile-calls"
             label="Calls answered"
+            hint="answered"
             value={count(answered)}
             total={count(calls)}
             note={calls === 0 ? "No calls placed yet" : `across ${count(items.length)} ${items.length === 1 ? "campaign" : "campaigns"}`}
@@ -293,16 +318,18 @@ export default function OverviewPage() {
           <Metric
             testId="tile-conversions"
             label="Conversions"
+            hint="conversion"
             value={count(conversions)}
             total={count(answered)}
             note="Meetings booked and sales"
             aside={<Ring share={answered > 0 ? conversions / answered : null} tint={SERIES.navy} label="Conversion rate" />}
           />
-          <Metric testId="tile-hot" label="Hot leads" value={count(hot)} total={count(scored)} note={scored === 0 ? "No lead scored yet" : "of leads with call evidence"} />
+          <Metric testId="tile-hot" label="Hot leads" hint="hot" value={count(hot)} total={count(scored)} note={scored === 0 ? "No lead scored yet" : "of leads with call evidence"} />
           {budgetShare ? (
             <Metric
               testId="tile-spend"
               label="Budget used"
+              hint="budget"
               value={money(budgetSpend)}
               note={`of ${money(budget)} budgeted${budgeted.length === items.length ? "" : ` · ${money(spend - budgetSpend)} unbudgeted`}`}
               aside={<Ring share={budgetShare.share} tint={budgetTint} label="Budget used" />}
@@ -318,9 +345,12 @@ export default function OverviewPage() {
             <BackgroundWork />
           </div>
           <div className="space-y-5">
-            <Panel title="Needs your attention" description="Most serious first" flush>
+            <Panel title="Needs your attention" description={attention.length === 0 ? "Decisions and problems appear here" : `${attention.length} ${attention.length === 1 ? "item" : "items"}, most serious first`} flush>
               {attention.length === 0 ? (
-                <p className="px-4 py-4 text-[13px] text-fg-2">Nothing is waiting for you.</p>
+                <p className="flex items-center gap-2.5 px-4 py-4 text-[13px] text-fg-2">
+                  <CircleCheck className="size-4 shrink-0 text-accent" aria-hidden="true" />
+                  Nothing is waiting for you. New playbook drafts, paused campaigns and failed jobs will show up here.
+                </p>
               ) : (
                 <ul className="divide-y divide-line" data-testid="attention">
                   {attention.map((item) => (
@@ -341,7 +371,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <Panel title="Campaigns" description="Select a column heading to sort" flush>
+        <Panel title="Campaigns" description="Select a row to open the campaign, or a column heading to sort" flush>
           <DataTable columns={columns} rows={items} rowKey={(d) => d.campaign.id} caption="Campaigns compared" initialSort={{ key: "rate", descending: true }} onRowClick={(d) => router.push(campaignHref(d.campaign.name))}
             testId="campaign-ranking"
             mobileRow={(d) => {
@@ -363,7 +393,7 @@ export default function OverviewPage() {
         </Panel>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-          <Panel title="Call outcomes" description={`How ${count(calls)} calls ended, across all campaigns`}>
+          <Panel title="Call outcomes" hint="outcome" description={`How ${count(calls)} calls ended, across all campaigns`}>
             {shown.length === 0 ? (
               <p className="text-[13px] text-fg-2">No calls have ended yet.</p>
             ) : (
@@ -375,7 +405,7 @@ export default function OverviewPage() {
             )}
           </Panel>
 
-          <Panel title="Hot leads" description={scored > 0 ? `${count(hot)} of ${count(scored)} scored leads are hot` : "Scored from what prospects said"} flush>
+          <Panel title="Hot leads" hint="lead-score" description={scored > 0 ? `${count(hot)} of ${count(scored)} scored leads are hot` : "Scored from what prospects said"} flush>
             {hotLeads.length === 0 ? (
               <p className="px-4 py-4 text-[13px] text-fg-2">No lead is hot yet. Scores appear once calls give evidence of need, authority and timing.</p>
             ) : (

@@ -1,11 +1,12 @@
 "use client";
 
 import { use, useCallback, useState } from "react";
-import { Minus, Plus, Sparkles } from "lucide-react";
+import { BookOpen, Minus, Plus, Sparkles } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
 import { coachResultSchema, versionDiffSchema, versionListSchema, versionSchema, type CoachResult, type Version } from "@/lib/api/schemas";
 import { Banner, Button, Confirm, EmptyState, ErrorState, Field, Loading, NoticeBar, Panel, Skeleton, Status, Textarea, type Notice, type Tone } from "@/components/dashboard/ui";
+import { Hint } from "@/components/dashboard/Hint";
 import { useAccess } from "@/components/dashboard/access";
 
 const STATE: Record<Version["status"], { text: string; tone: Tone }> = {
@@ -230,10 +231,13 @@ function Coach({ campaign, onDone }: { campaign: string; onDone: () => void }) {
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <h2 className="t-eyebrow">{title}</h2>
+      <div className="flex items-center gap-1.5">
+        <h2 className="t-eyebrow">{title}</h2>
+        {hint && <Hint term={hint} />}
+      </div>
       {children}
     </div>
   );
@@ -261,19 +265,19 @@ export default function PlaybookPage({ params }: { params: Promise<{ name: strin
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 ? (
-        <EmptyState title="This campaign has no playbook yet">Create one on the calling engine first; its versions will appear here.</EmptyState>
+        <EmptyState icon={BookOpen} title="This campaign has no playbook yet">A playbook is written when a campaign is created in the console. This one was made another way; its versions will appear here once it has one.</EmptyState>
       ) : data ? (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
-          <Group title="Waiting for your decision">
+          <Group title="Waiting for your decision" hint="version">
             {drafts.length === 0 ? (
-              <p className="rounded-panel border border-dashed border-line-strong px-4 py-3.5 text-[13px] text-fg-2">No draft is waiting. Ask the coach above, or train the campaign from new documents, to get one.</p>
+              <p className="rounded-panel border border-dashed border-line-strong px-4 py-3.5 text-[13px] text-fg-2">No draft is waiting. To get one, ask the coach above, or build a draft from your documents on the Knowledge tab.</p>
             ) : (
               drafts.map((v) => <VersionPanel key={v.version} campaign={name} version={v} onChanged={changed} />)
             )}
           </Group>
           <div className="space-y-6">
             {live && (
-              <Group title="What calls use now">
+              <Group title="What calls use now" hint="playbook">
                 <VersionPanel key={live.version} campaign={name} version={live} onChanged={setNotice} />
               </Group>
             )}

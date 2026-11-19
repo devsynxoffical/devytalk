@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { Activity, RotateCcw } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { count, dateTime } from "@/lib/api/format";
 import { jobsSchema, okSchema, type Job } from "@/lib/api/schemas";
@@ -68,7 +68,7 @@ export default function SystemPage() {
 
   return (
     <>
-      <PageHeader title="Background work" description="What the engine does after or beside a call: reviewing calls, telling your systems about booked meetings, training from documents. Failed work is retried on its own; what gave up for good is listed with the reason." />
+      <PageHeader title="Background work" hint="background-work" description="What the engine does after or beside a call: reviewing calls, telling your systems about booked meetings, training from documents. Failed work is retried on its own; what gave up for good is listed with the reason." />
       <div className="mt-5 space-y-5">
         <NoticeBar notice={notice} onClose={closeNotice} />
         {loading && !data ? (
@@ -91,7 +91,7 @@ export default function SystemPage() {
             >
               {data.jobs.length === 0 ? (
                 <div className="p-4">
-                  <EmptyState title={filter ? "Nothing in this state" : "No background work yet"}>Work appears here once calls end, meetings are booked or training is started.</EmptyState>
+                  <EmptyState icon={Activity} title={filter ? "Nothing in this state" : "No background work yet"}>Work appears here once calls end, meetings are booked or training is started.</EmptyState>
                 </div>
               ) : (
                 <DataTable columns={columns} rows={data.jobs} rowKey={(job) => job.id} caption="Background work" />

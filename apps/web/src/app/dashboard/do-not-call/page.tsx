@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, type FormEvent } from "react";
-import { Upload } from "lucide-react";
+import { PhoneOff, Upload } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { count, dateTime } from "@/lib/api/format";
 import { doNotCallImportSchema, doNotCallSchema, erasureSchema, type DoNotCallEntry, type Erasure } from "@/lib/api/schemas";
@@ -193,7 +193,7 @@ export default function DoNotCallPage() {
   return (
     <div className="space-y-6">
       <NoticeBar notice={notice} onClose={closeNotice} />
-      <PageHeader title="Do not call" description="The numbers this organization never calls: people who asked not to be called, and any list you add." />
+      <PageHeader title="Do not call" hint="do-not-call" description="The numbers this organization never calls: people who asked not to be called, and any list you add." />
       {canOperate && <AddNumbers onDone={(n) => (setNotice(n), reload())} />}
       {removing && (
         <Confirm label={`Take ${removing.phone} off the list`} confirmLabel="Remove from the list" tone="danger" busy={busy} onConfirm={remove} onCancel={() => setRemoving(null)} error={problem}>
@@ -210,7 +210,7 @@ export default function DoNotCallPage() {
         ) : error ? (
           <ErrorState message={error.message} onRetry={reload} />
         ) : data && data.entries.length === 0 ? (
-          <EmptyState title={q.trim() ? "No number matches" : "Nobody is on the list yet"}>{q.trim() ? "Check the digits you typed." : "People who ask not to be called during a call are added here by themselves."}</EmptyState>
+          <EmptyState icon={PhoneOff} title={q.trim() ? "No number matches" : "Nobody is on the list yet"}>{q.trim() ? "Check the digits you typed." : "People who ask not to be called during a call are added here by themselves."}</EmptyState>
         ) : data ? (
           <DataTable columns={columns} rows={data.entries} rowKey={(e) => e.id} caption="Numbers that are never called" testId="do-not-call" />
         ) : null}

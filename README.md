@@ -67,7 +67,8 @@ It adds no data of its own: every number is read from the engine's API.
 | Settings | Languages the agent opens in and switches to; the inbound number the campaign answers; calling days and hours, attempts, daily and monthly limits, budget and stop conditions; export of results as CSV |
 | New campaign | A short form that creates a campaign with a working playbook, without the command line or the AI model |
 | Requests | What visitors sent through the website's forms; mark as handled |
-| Setup | Which providers are connected and which engine settings are missing (names only), the outbound number, the address to give the phone provider for inbound calls |
+| Setup | The services a call needs, each named by what it does in a call (the phone line, the ears, the brain, the voice): which are connected, what to do about the rest, and the engine settings still missing (names only, with a button that copies the list for whoever runs the engine); the outbound number; the address to give the phone provider for inbound calls |
+| Help | Step-by-step guides, the questions asked first, and what every word on the screens means, searched from one field |
 | Team | Admins add people, change roles, reset passwords, deactivate and reactivate |
 | Your account | Who you are signed in as; change your password |
 | Background work | Reviews, booking notifications and training runs: waiting, running, gave up, with the reason and a way to run one again |
@@ -76,6 +77,23 @@ Design: `docs/UI_REDESIGN.md` describes the visual language ("Ledger"), the toke
 the type system (IBM Plex Sans and Mono), the component library and the layout chosen
 for each screen. Jump anywhere with Ctrl/⌘K. Phones get a tab bar, compact rows and
 bottom sheets instead of a squeezed desktop.
+
+Finding your way:
+
+- **Every page is in the rail**, grouped (the work, Account, Developers, then Setup and
+  Help). The account menu holds only the person's own things: theme, password, sign out.
+  On a phone the three busiest pages are tabs and the rest is one tap further, under More.
+- **A launch guide** on the overview shows the way to the first call (connect the
+  services, create a campaign, add people, place a call) until every step is done. A
+  step is done when the thing it asks for exists; nothing is remembered in the browser.
+- **A check before dialing starts**: the confirmation says whether the services are
+  connected, how many leads are waiting, when calls go out and what is left of the
+  budget, each with the way to fix it. The engine still decides.
+- **Question marks beside figures and headings** open a short explanation and lead to
+  the same word in Help. One file (`src/content/console-help.ts`) feeds the hints, the
+  Help page and the search; a unit test fails if a screen uses a word it does not explain.
+- **Search** (Ctrl/⌘K) finds pages by what people call them ("billing" finds Usage),
+  campaign sections, and the words Help explains.
 
 Rules the dashboard keeps:
 
@@ -162,7 +180,8 @@ inspect leads, reject, approve and roll back playbook versions, run and promote 
 test, upload and search documents, import leads, sign in with personal accounts and
 check each role, manage the team, send the website's forms and find them under
 Requests, create a campaign and set its languages and inbound number, switch themes,
-empty states and error states. Two things are simulated and marked as such in the
+the rail and the phone's menu, the launch guide, the check before dialing, the hints
+and Help, empty states and error states. Two things are simulated and marked as such in the
 tests, because no phone provider is configured there: the engine's answers for a call
 in progress, and the phone provider's request for an inbound call. They change data, so never point them at a real
 database. The fixture campaigns exist only in that temporary database.

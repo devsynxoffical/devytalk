@@ -34,6 +34,14 @@ export function dateTime(iso: string | null | undefined): string {
   return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+/** A calendar day, such as the Monday a week starts on: "Nov 16". The year is added when it is not this year. */
+export function day(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return DASH;
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso);
+  if (Number.isNaN(date.getTime())) return DASH;
+  return date.toLocaleDateString("en-US", date.getFullYear() === now.getFullYear() ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function duration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined) return DASH;
   const m = Math.floor(seconds / 60);

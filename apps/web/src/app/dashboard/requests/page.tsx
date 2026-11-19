@@ -1,5 +1,6 @@
 "use client";
 
+import { Inbox } from "lucide-react";
 import { useCallback, useState } from "react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
@@ -114,7 +115,7 @@ export default function RequestsPage() {
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.requests.length === 0 ? (
-        <EmptyState title={filter === "new" ? "Nothing is waiting" : "No requests here"}>
+        <EmptyState icon={Inbox} title={filter === "new" ? "Nothing is waiting" : "No requests here"}>
           {filter === "new"
             ? "New requests from the website appear here. If the website's forms are in use and nothing ever arrives, check that the website and the calling engine share the same intake token."
             : "Change the filter to see other requests."}

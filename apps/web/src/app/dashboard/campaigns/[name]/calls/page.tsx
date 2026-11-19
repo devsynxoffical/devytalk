@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowDownLeft, ArrowUpRight, ExternalLink, PhoneOutgoing, Voicemail } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ExternalLink, MousePointerClick, Phone, PhoneOutgoing, Voicemail } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { DASH, count, dateTime, duration, label, languageName, money } from "@/lib/api/format";
 import { callDetailSchema, callListSchema, dialResultSchema, type CallDetail, type CallRow } from "@/lib/api/schemas";
@@ -344,7 +344,7 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 && !direction ? (
-        <EmptyState title="No calls yet">Calls appear here as soon as this campaign places or answers one.</EmptyState>
+        <EmptyState icon={Phone} title="No calls yet">Calls appear here as soon as this campaign places or answers one.</EmptyState>
       ) : data ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] [&>*]:min-w-0">
           <Panel
@@ -413,7 +413,7 @@ export default function CallsPage({ params }: { params: Promise<{ name: string }
                 <DetailLoader row={current} onEnded={reload} />
               </Panel>
             ) : (
-              <EmptyState title="Select a call">Its transcript, summary and follow-up appear here.</EmptyState>
+              <EmptyState icon={MousePointerClick} title="Select a call">Its transcript, summary and follow-up appear here.</EmptyState>
             ))}
         </div>
       ) : null}

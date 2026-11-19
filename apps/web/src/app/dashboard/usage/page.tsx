@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Receipt } from "lucide-react";
 import { backendUrl, useApi } from "@/lib/api/client";
 import { count, percent } from "@/lib/api/format";
 import { economicsSchema, statementListSchema, statementSchema, type Economics, type Statement } from "@/lib/api/schemas";
@@ -65,7 +65,7 @@ function StatementView({ period }: { period: string }) {
       )}
       <Panel flush title="By campaign">
         {data.by_campaign.length === 0 ? (
-          <EmptyState title="Nothing was used this month">No calls were placed and no AI work was done.</EmptyState>
+          <EmptyState icon={Receipt} title="Nothing was used this month">No calls were placed and no AI work was done.</EmptyState>
         ) : (
           <DataTable columns={columns} rows={data.by_campaign} rowKey={(r) => r.campaign_id ?? 0} caption="Usage by campaign" testId="statement-campaigns" initialSort={{ key: "amount", descending: true }} />
         )}
@@ -138,6 +138,7 @@ export default function UsagePage() {
     <div className="space-y-6">
       <PageHeader
         title="Usage"
+        hint="statement"
         description="What this organization used, month by month: calls, AI, and any corrections."
         actions={
           data && data.length > 0 && period ? (
@@ -156,7 +157,7 @@ export default function UsagePage() {
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 ? (
-        <EmptyState title="No usage yet">The first call writes the first line. Each month then gets a statement here.</EmptyState>
+        <EmptyState icon={Receipt} title="No usage yet">The first call writes the first line. Each month then gets a statement here.</EmptyState>
       ) : period ? (
         <>
           <StatementView key={period} period={period} />

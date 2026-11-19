@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
-import { Check, Minus, Search, Upload, X } from "lucide-react";
+import { Check, Minus, Search, Upload, UsersRound, X } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { DASH, FACTOR_LABELS, count, dateTime, duration, label, languageName } from "@/lib/api/format";
 import { leadDetailSchema, leadImportSchema, leadListSchema, type Lead, type LeadDetail, type LeadImport } from "@/lib/api/schemas";
@@ -15,6 +15,12 @@ const INTENT_TONE: Record<string, Tone> = { high: "pos", medium: "warn", low: "n
 const STATUSES = ["pending", "calling", "callback", "completed", "failed", "dnc"];
 const statusText = (status: string) => (status === "dnc" ? "Do not call" : label(status));
 
+/** A sheet to start from: the column names the import recognises, with phone numbers from the range reserved for examples. */
+const SAMPLE_SHEET =
+  "data:text/csv;charset=utf-8," +
+  encodeURIComponent(
+    ["first_name,last_name,company,phone,email,timezone,consent,notes", "Maria,Lopez,Lopez Dental,+14155550142,maria@example.com,America/Los_Angeles,yes,Asked for a call back in March", "Omar,Haddad,Haddad & Partners,+14155550167,omar@example.com,America/New_York,,"].join("\r\n") + "\r\n",
+  );
 const SHEETS = [".csv", ".xlsx", ".xls"];
 
 /** What an import did, in the engine's own counts. */
@@ -57,7 +63,12 @@ function ImportLeads({ campaign, onImported }: { campaign: string; onImported: (
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="t-meta max-w-xl">Import a CSV or Excel sheet with a phone column. Names, companies and time zones are picked up when the sheet has them.</p>
+        <p className="t-meta max-w-xl">
+          Import a CSV or Excel sheet with a phone column. Names, companies, time zones and consent are picked up when the sheet has them.{" "}
+          <a href={SAMPLE_SHEET} download="devytalk-leads-sample.csv" className="font-medium text-accent hover:underline">
+            Download a sample sheet
+          </a>
+        </p>
         <input ref={picker} type="file" accept={SHEETS.join(",")} className="sr-only" aria-label="Choose a lead sheet to import" onChange={(e) => (void send(e.target.files?.[0]), (e.target.value = ""))} />
         <Button busy={busy} onClick={() => picker.current?.click()}>
           <Upload className="size-3.5" aria-hidden="true" />
@@ -291,8 +302,8 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
         </span>
       ),
     },
-    { key: "score", label: "Score", render: (lead) => <Score lead={lead} /> },
-    { key: "intent", label: "Buying intent", render: (lead) => (lead.buying_intent ? <Status tone={INTENT_TONE[lead.buying_intent]}>{label(lead.buying_intent)}</Status> : <span className="text-fg-3">{DASH}</span>) },
+    { key: "score", label: "Score", hint: "lead-score", render: (lead) => <Score lead={lead} /> },
+    { key: "intent", label: "Buying intent", hint: "buying-intent", render: (lead) => (lead.buying_intent ? <Status tone={INTENT_TONE[lead.buying_intent]}>{label(lead.buying_intent)}</Status> : <span className="text-fg-3">{DASH}</span>) },
     {
       key: "status",
       label: "Status",
@@ -304,7 +315,7 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
       ),
     },
     { key: "calls", label: "Calls", numeric: true, render: (lead) => count(lead.calls) },
-    { key: "next", label: "Next action", render: (lead) => lead.next_action ?? null, className: "sm:max-w-80" },
+    { key: "next", label: "Next action", hint: "next-action", render: (lead) => lead.next_action ?? null, className: "sm:max-w-80" },
   ];
 
   return (
@@ -356,11 +367,11 @@ export default function LeadsPage({ params }: { params: Promise<{ name: string }
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.total === 0 ? (
         filtered ? (
-          <EmptyState title="No leads match these filters" action={<Button onClick={clear}>Clear filters</Button>}>
+          <EmptyState icon={Search} title="No leads match these filters" action={<Button onClick={clear}>Clear filters</Button>}>
             Change or clear the filters to see more leads.
           </EmptyState>
         ) : (
-          <EmptyState title="No leads in this campaign yet">
+          <EmptyState icon={UsersRound} title="No leads in this campaign yet">
             {canOperate ? "Import a CSV or Excel sheet above. Each row needs a phone number." : "An operator or admin can import a lead sheet."}
           </EmptyState>
         )

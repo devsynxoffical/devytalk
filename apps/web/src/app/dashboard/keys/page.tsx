@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { KeyRound } from "lucide-react";
+import { KeyRound, KeySquare } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
 import { apiKeyListSchema, apiKeySchema, newApiKeySchema, type ApiKey } from "@/lib/api/schemas";
@@ -133,6 +133,7 @@ export default function ApiKeysPage() {
       <NoticeBar notice={notice} onClose={closeNotice} />
       <PageHeader
         title="API keys"
+        hint="api-key"
         description="Keys your own systems use to work with this organization's campaigns, leads and calls."
         actions={
           isAdmin && !adding ? (
@@ -169,7 +170,7 @@ export default function ApiKeysPage() {
           <ErrorState message={error.message} onRetry={reload} />
         )
       ) : data && data.length === 0 ? (
-        <EmptyState title="No API keys yet">A key lets one of your own systems read or change this organization&apos;s data without a person signing in.</EmptyState>
+        <EmptyState icon={KeySquare} title="No API keys yet">A key lets one of your own systems read or change this organization&apos;s data without a person signing in.</EmptyState>
       ) : data ? (
         <Panel flush>
           <DataTable columns={columns} rows={data} rowKey={(k) => k.id} caption="API keys" testId="api-keys" />

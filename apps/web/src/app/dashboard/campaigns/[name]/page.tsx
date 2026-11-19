@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { backendUrl, useApi } from "@/lib/api/client";
-import { DASH, budgetUse, count, label, languageName, money, percent } from "@/lib/api/format";
+import { DASH, budgetUse, count, day, label, languageName, money, percent } from "@/lib/api/format";
 import { campaignSchema, reportSchema, rulesSchema, type Report, type Rules } from "@/lib/api/schemas";
 import { GettingStarted } from "@/components/dashboard/CampaignSetup";
 import { Banner, DataTable, EmptyState, ErrorState, KeyValues, Loading, Meter, Metric, MetricStrip, Panel, Tag, type Column } from "@/components/dashboard/ui";
@@ -14,7 +14,7 @@ type Group = Report["by_language"][string] & { key: string };
 function Budget({ rules }: { rules: Rules }) {
   const budget = budgetUse(rules.spend_usd, rules.rules.budget_usd);
   return (
-    <Panel title="Budget and limits" description="Spend is estimated from your configured cost per minute and per attempt">
+    <Panel title="Budget and limits" hint="budget" description="Spend is estimated from your configured cost per minute and per attempt">
       {budget ? (
         <>
           <div className="flex items-end justify-between gap-4">
@@ -72,12 +72,12 @@ type Week = Report["quality_by_week"][number];
 /** Each playbook version week by week: whether quality and results moved when the playbook did. */
 function Weeks({ weeks }: { weeks: Week[] }) {
   const columns: Column<Week>[] = [
-    { key: "week", label: "Week of", primary: true, sortValue: (w) => w.week, render: (w) => <span className="t-figure font-medium text-fg">{w.week}</span> },
+    { key: "week", label: "Week of", primary: true, sortValue: (w) => w.week, render: (w) => <span className="font-medium text-fg">{day(w.week)}</span> },
     { key: "version", label: "Playbook", sortValue: (w) => w.playbook_version, render: (w) => (w.playbook_version === "unknown" ? "Not tracked" : `Version ${w.playbook_version}`) },
     { key: "answered", label: "Answered", numeric: true, sortValue: (w) => w.answered, render: (w) => count(w.answered) },
     { key: "rate", label: "Conversion rate", numeric: true, sortValue: (w) => w.conversion_rate, render: (w) => percent(w.conversion_rate) },
-    { key: "quality", label: "Agent quality", numeric: true, sortValue: (w) => w.average_quality, render: (w) => (w.average_quality === null ? DASH : `${w.average_quality.toFixed(1)} / 10`) },
-    { key: "cost", label: "Cost per conversion", numeric: true, sortValue: (w) => w.cost_per_conversion, render: (w) => money(w.cost_per_conversion) },
+    { key: "quality", label: "Agent quality", hint: "agent-quality", numeric: true, sortValue: (w) => w.average_quality, render: (w) => (w.average_quality === null ? DASH : `${w.average_quality.toFixed(1)} / 10`) },
+    { key: "cost", label: "Cost per conversion", hint: "cost-per-conversion", numeric: true, sortValue: (w) => w.cost_per_conversion, render: (w) => money(w.cost_per_conversion) },
     { key: "sample", label: "Sample", render: (w) => (w.enough_data ? <Tag tone="pos">Enough to read</Tag> : <Tag tone="warn">Too few calls</Tag>) },
   ];
   return (
@@ -104,10 +104,10 @@ function Groups({ title, description, groups, nameOf, best }: { title: string; d
     { key: "calls", label: "Calls", numeric: true, sortValue: (g) => g.calls, render: (g) => count(g.calls) },
     { key: "answered", label: "Answered", numeric: true, sortValue: (g) => g.answered, render: (g) => count(g.answered) },
     { key: "conversions", label: "Conversions", numeric: true, sortValue: (g) => g.conversions, render: (g) => count(g.conversions) },
-    { key: "rate", label: "Conversion rate", numeric: true, sortValue: (g) => g.conversion_rate, render: (g) => percent(g.conversion_rate) },
-    { key: "quality", label: "Agent quality", numeric: true, sortValue: (g) => g.average_quality, render: (g) => (g.average_quality === null ? DASH : `${g.average_quality.toFixed(1)} / 10`) },
-    { key: "cost", label: "Cost per conversion", numeric: true, sortValue: (g) => g.cost_per_conversion, render: (g) => money(g.cost_per_conversion) },
-    { key: "sample", label: "Sample", render: (g) => (g.enough_data ? <Tag tone="pos">Enough to compare</Tag> : <Tag tone="warn">Too few calls</Tag>) },
+    { key: "rate", label: "Conversion rate", hint: "conversion-rate", numeric: true, sortValue: (g) => g.conversion_rate, render: (g) => percent(g.conversion_rate) },
+    { key: "quality", label: "Agent quality", hint: "agent-quality", numeric: true, sortValue: (g) => g.average_quality, render: (g) => (g.average_quality === null ? DASH : `${g.average_quality.toFixed(1)} / 10`) },
+    { key: "cost", label: "Cost per conversion", hint: "cost-per-conversion", numeric: true, sortValue: (g) => g.cost_per_conversion, render: (g) => money(g.cost_per_conversion) },
+    { key: "sample", label: "Sample", hint: "sample", render: (g) => (g.enough_data ? <Tag tone="pos">Enough to compare</Tag> : <Tag tone="warn">Too few calls</Tag>) },
   ];
   return (
     <Panel title={title} description={description} flush>
@@ -163,10 +163,10 @@ campaign.data ? <GettingStarted campaign={campaign.data} /> : <EmptyState title=
       ) : (
         <MetricStrip>
           <Metric label="Total calls" value={count(r.calls.total)} note={`${count(r.calls.reviewed)} reviewed`} />
-          <Metric label="Answered" value={count(r.calls.answered)} total={count(r.calls.total)} aside={<Ring share={r.calls.answered / r.calls.total} tint={SERIES.blue} label="Share of calls answered" size={44} />} />
-          <Metric label="Conversions" value={count(r.calls.conversions)} total={count(r.calls.answered)} aside={<Ring share={r.calls.conversion_rate} tint={SERIES.navy} label="Conversion rate" size={44} />} />
-          <Metric label="Conversion rate" value={percent(r.calls.conversion_rate)} note="Of answered calls" />
-          <Metric label="Cost per conversion" value={money(r.cost.cost_per_conversion)} note={`${money(r.cost.spend_usd)} spent`} wide />
+          <Metric label="Answered" hint="answered" value={count(r.calls.answered)} total={count(r.calls.total)} aside={<Ring share={r.calls.answered / r.calls.total} tint={SERIES.blue} label="Share of calls answered" size={44} />} />
+          <Metric label="Conversions" hint="conversion" value={count(r.calls.conversions)} total={count(r.calls.answered)} aside={<Ring share={r.calls.conversion_rate} tint={SERIES.navy} label="Conversion rate" size={44} />} />
+          <Metric label="Conversion rate" hint="conversion-rate" value={percent(r.calls.conversion_rate)} note="Of answered calls" />
+          <Metric label="Cost per conversion" hint="cost-per-conversion" value={money(r.cost.cost_per_conversion)} note={`${money(r.cost.spend_usd)} spent`} wide />
         </MetricStrip>
       )}
 
@@ -190,7 +190,7 @@ campaign.data ? <GettingStarted campaign={campaign.data} /> : <EmptyState title=
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 [&>*]:min-w-0">
-        <Panel title="Lead quality" description={`${count(r.leads.total)} leads. Unscored leads have no evidence yet.`}>
+        <Panel title="Lead quality" hint="lead-score" description={`${count(r.leads.total)} leads. Unscored leads have no evidence yet.`}>
           <div className="space-y-3">
             {(["hot", "warm", "cold", "unscored"] as const).map((category) => (
               <BarRow key={category} name={label(category)} share={r.leads[category] / leadMax} figure={count(r.leads[category])} tint={category === "hot" ? SERIES.navy : SERIES.blue} muted={category === "unscored"} />

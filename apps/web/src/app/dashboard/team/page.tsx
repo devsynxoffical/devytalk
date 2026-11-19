@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { Link2, UserPlus } from "lucide-react";
+import { Link2, UserPlus, UsersRound } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { dateTime } from "@/lib/api/format";
 import { newInvitationSchema, roleSchema, userListSchema, userSchema, type Role, type User } from "@/lib/api/schemas";
@@ -210,6 +210,7 @@ export default function TeamPage() {
       <NoticeBar notice={notice} onClose={closeNotice} />
       <PageHeader
         title="Team"
+        hint="roles"
         description="Who can sign in to this console, and what each person may do."
         actions={
           isAdmin && !adding && !inviting ? (
@@ -241,7 +242,7 @@ export default function TeamPage() {
           <ErrorState message={error.message} onRetry={reload} />
         )
       ) : data && data.length === 0 ? (
-        <EmptyState title="Nobody has an account yet" action={!adding ? <Button onClick={() => setAdding(true)}>Add the first person</Button> : undefined}>
+        <EmptyState icon={UsersRound} title="Nobody has an account yet" action={!adding ? <Button onClick={() => setAdding(true)}>Add the first person</Button> : undefined}>
           You are signed in with the engine&apos;s access token. Add an account for each person, so that actions are recorded under their name and each has only the access they need.
         </EmptyState>
       ) : data ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { FlaskConical } from "lucide-react";
 import { use, useCallback, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
@@ -162,7 +163,7 @@ function StartForm({ campaign, candidates, liveVersion, onStarted }: { campaign:
 
   if (candidates.length === 0) {
     return (
-      <EmptyState title="No version to test yet">
+      <EmptyState icon={FlaskConical} title="No version to test yet">
         A test compares the live playbook with another version. Ask the coach for a draft on the{" "}
         <Link href={`/dashboard/campaigns/${encodeURIComponent(campaign)}/playbook`} className="font-medium text-accent hover:underline">
           Coach &amp; playbook

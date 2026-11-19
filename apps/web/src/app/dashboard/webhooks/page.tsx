@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { Webhook } from "lucide-react";
+import { Send, Webhook } from "lucide-react";
 import { ApiError, apiRequest, backendUrl, useApi } from "@/lib/api/client";
 import { count, dateTime } from "@/lib/api/format";
 import { newWebhookSchema, webhookDeliveryListSchema, webhookDeliverySchema, webhookEndpointSchema, webhookListSchema, type WebhookDelivery, type WebhookEndpoint } from "@/lib/api/schemas";
@@ -120,7 +120,7 @@ function Deliveries({ endpoint, onClose }: { endpoint: WebhookEndpoint; onClose:
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : data && data.length === 0 ? (
-        <EmptyState title="Nothing has been sent yet">Send a test, or wait for the first event.</EmptyState>
+        <EmptyState icon={Send} title="Nothing has been sent yet">Send a test, or wait for the first event.</EmptyState>
       ) : (
         <ul className="divide-y divide-line" data-testid="deliveries">
           {(data ?? []).map((d) => (
@@ -297,6 +297,7 @@ export default function WebhooksPage() {
       <NoticeBar notice={notice} onClose={closeNotice} />
       <PageHeader
         title="Webhooks"
+        hint="webhook"
         description="Have your own systems told when a call ends or a meeting is booked, instead of asking."
         actions={
           isAdmin && !adding && data ? (
@@ -327,7 +328,7 @@ export default function WebhooksPage() {
         ) : error ? (
           <ErrorState message={error.status === 403 ? "Only an admin of this organization manages webhooks." : error.message} onRetry={error.status === 403 ? undefined : reload} />
         ) : data && data.endpoints.length === 0 ? (
-          <EmptyState title="No endpoints yet">Add the address of your CRM or calendar to be told about calls and bookings as they happen.</EmptyState>
+          <EmptyState icon={Webhook} title="No endpoints yet">Add the address of your CRM or calendar to be told about calls and bookings as they happen.</EmptyState>
         ) : data ? (
           <DataTable columns={columns} rows={data.endpoints} rowKey={(e) => e.id} caption="Webhook endpoints" testId="webhooks" />
         ) : null}
