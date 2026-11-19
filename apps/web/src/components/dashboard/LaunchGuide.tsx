@@ -45,7 +45,8 @@ export function LaunchGuide({ status, campaigns, calls }: { status: EngineStatus
           const current = step.id === next.id;
           const allowed = !step.admin || isAdmin;
           return (
-            <li key={step.id} className={cn("flex flex-col gap-2 px-4 py-3.5", current ? "bg-pos-bg" : "bg-surface")} aria-current={current ? "step" : undefined}>
+            // On a phone a finished step is one line: its name and the way back to it.
+            <li key={step.id} className={cn("flex flex-col gap-2 px-4 py-3.5", current ? "bg-pos-bg" : "bg-surface", step.done && "max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:py-2.5")} aria-current={current ? "step" : undefined}>
               <div className="flex items-center gap-2.5">
                 <span
                   className={cn("t-figure grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-medium", step.done ? "bg-signal text-on-signal" : current ? "bg-surface text-fg ring-2 ring-signal" : "bg-sunken text-fg-3")}
@@ -56,8 +57,8 @@ export function LaunchGuide({ status, campaigns, calls }: { status: EngineStatus
                 </span>
                 <p className={cn("text-[13.5px] font-medium", step.done ? "text-fg-2" : "text-fg")}>{step.title}</p>
               </div>
-              <p className="t-meta flex-1 pl-[34px]">{step.text}</p>
-              <div className="pl-[34px]">
+              <p className={cn("t-meta flex-1 pl-[34px]", step.done && "max-sm:hidden")}>{step.text}</p>
+              <div className={cn("pl-[34px]", step.done && "max-sm:shrink-0 max-sm:pl-0")}>
                 {!allowed ? (
                   <p className="t-meta">An admin does this.</p>
                 ) : current ? (
